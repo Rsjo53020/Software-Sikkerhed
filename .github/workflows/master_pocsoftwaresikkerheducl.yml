@@ -15,17 +15,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'   
+      
       - name: Run tests
-        working-directory: ./ValidateTheNameModelBinding.Tests
+        working-directory: ./WebGoat.NET.Tests
         run: dotnet test
+        
   build:
     runs-on: windows-latest
+    needs: test
     permissions:
       contents: read
-
+    
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
@@ -47,8 +55,8 @@ jobs:
     runs-on: windows-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write 
+      contents: read 
 
     steps:
       - name: Download artifact from build job
@@ -72,4 +80,5 @@ jobs:
           package: .
 
           
+
 
