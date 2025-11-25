@@ -59,3 +59,16 @@ WebGoat.NET anvender en SQLite-database (`NORTHWND.sqlite`) til persistent lagri
 
 
 
+## Kommandorer
+- dotnet list package --vulnerable
+- snyk code test --json > snyk-code.json
+
+## Upset test miljø steps
+- from -> C:\Users\ronni\source\repos\Software-Sikkerhed>
+- 1) dotnet new xunit -o WebGoat.NET.Tests
+- 2) dotnet sln add ./WebGoat.NET.Tests/WebGoat.NET.Tests.csproj
+- 3) dotnet add ./WebGoat.NET.Tests/WebGoat.NET.Tests.csproj reference ./WebGoat.NET/WebGoat.NET.csproj
+
+## manuelt NuGet update
+- dotnet list package --outdated
+- dotnet outdated --upgrade
