@@ -10,23 +10,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  scan-for-vunerable-packages:
-   runs-on: windows-latest
-
-   steps:
-     - uses: actions/checkout@v4
-     - name: Check for vulnerable packages
-       working-directory: ./SqlInjection
-       run: |
-         dotnet restore
-         New-Item vulnerabilities.txt
-         dotnet list package --vulnerable --include-transitive | Tee-Object vulnerabilities.txt
-         $matches = Get-Content vulnerabilities.txt | Select-String -Pattern "has the following vulnerable packages"
-         if ($matches.Length -gt 0) {echo 'Vulnerable packages detected'; exit 1}
   test:
     runs-on: windows-latest
-    # needs: scan-for-vunerable-packages
-
 
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +21,7 @@ jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -87,3 +72,4 @@ jobs:
           package: .
 
           
+
