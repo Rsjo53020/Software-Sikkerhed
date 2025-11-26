@@ -25,7 +25,6 @@ namespace WebGoatCore.Models
                 throw new ArgumentException("Address contains invalid characters.");
                 
             Value = value;
-
         }
     }
 }
