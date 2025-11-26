@@ -1,0 +1,159 @@
+using System;
+using WebGoatCore.Models;
+using Xunit;
+
+namespace WebGoat.NET.Tests
+{
+    public class CustomerUnitTests
+    {
+        private static CustomerId ValidId => new("ABCDE");
+        private static CompanyName ValidCompany => new("Acme Corp");
+        private static ContactName ValidContact => new("John Doe");
+        private static PhoneNumber ValidPhone => new("+45 12345678");
+
+        [Fact]
+        public void GivenAllValidArguments_WhenConstructingCustomer_ThenCreatesConsistentCustomer()
+        {
+            // Given
+            var id      = ValidId;
+            var company = ValidCompany;
+            var contact = ValidContact;
+
+            var contactTitle = new ContactTitle("  CEO  ");
+            var address      = new Address("  Main Street 1 ");
+            var city         = new City("  København ");
+            Region? region   = null;
+            var postalCode   = new PostalCode(" 2100 ");
+            var country      = new Country(" dk ");
+            var phone        = ValidPhone;
+            var fax          = new FaxNumber("  12345678 ");
+
+            // When
+            var customer = new Customer(
+                id,
+                company,
+                contact,
+                contactTitle,
+                address,
+                city,
+                region,
+                postalCode,
+                country,
+                phone,
+                fax);
+
+            // Then
+            Assert.Same(id, customer.CustomerId);
+            Assert.Same(company, customer.CompanyName);
+            Assert.Same(contact, customer.ContactName);
+
+            Assert.Equal("CEO", customer.ContactTitle!.Value);
+            Assert.Equal("Main Street 1", customer.Address!.Value);
+            Assert.Equal("København", customer.City!.Value);
+            Assert.Null(customer.Region);
+            Assert.Equal("2100", customer.PostalCode!.Value);
+            Assert.Equal("DK", customer.Country!.Value);
+            Assert.Same(phone, customer.Phone);
+            Assert.Equal("12345678", customer.Fax!.Value);
+        }
+
+        [Fact]
+        public void GivenNullCustomerId_WhenConstructingCustomer_ThenThrowsArgumentNullException()
+        {
+            // Given
+            CustomerId? id = null;
+
+            // When + Then
+            Assert.Throws<ArgumentNullException>(() =>
+                new Customer(
+                    id!,
+                    ValidCompany,
+                    ValidContact,
+                    contactTitle: null,
+                    address: null,
+                    city: null,
+                    region: null,
+                    postalCode: null,
+                    country: null,
+                    phone: null,
+                    fax: null));
+        }
+
+        [Fact]
+        public void GivenNullCompanyName_WhenConstructingCustomer_ThenThrowsArgumentNullException()
+        {
+            // Given
+            CompanyName? company = null;
+
+            // When + Then
+            Assert.Throws<ArgumentNullException>(() =>
+                new Customer(
+                    ValidId,
+                    company!,
+                    ValidContact,
+                    contactTitle: null,
+                    address: null,
+                    city: null,
+                    region: null,
+                    postalCode: null,
+                    country: null,
+                    phone: null,
+                    fax: null));
+        }
+
+        [Fact]
+        public void GivenNullContactName_WhenConstructingCustomer_ThenThrowsArgumentNullException()
+        {
+            // Given
+            ContactName? contact = null;
+
+            // When + Then
+            Assert.Throws<ArgumentNullException>(() =>
+                new Customer(
+                    ValidId,
+                    ValidCompany,
+                    contact!,
+                    contactTitle: null,
+                    address: null,
+                    city: null,
+                    region: null,
+                    postalCode: null,
+                    country: null,
+                    phone: null,
+                    fax: null));
+        }
+
+        [Fact]
+        public void GivenOnlyRequiredFields_WhenConstructingCustomer_ThenAllOptionalFieldsAreNull()
+        {
+            // Given
+            var id      = ValidId;
+            var company = ValidCompany;
+            var contact = ValidContact;
+
+            // When
+            var customer = new Customer(
+                id,
+                company,
+                contact,
+                contactTitle: null,
+                address: null,
+                city: null,
+                region: null,
+                postalCode: null,
+                country: null,
+                phone: null,
+                fax: null);
+
+            // Then
+            Assert.Null(customer.ContactTitle);
+            Assert.Null(customer.Address);
+            Assert.Null(customer.City);
+            Assert.Null(customer.Region);
+            Assert.Null(customer.PostalCode);
+            Assert.Null(customer.Country);
+            Assert.Null(customer.Phone);
+            Assert.Null(customer.Fax);
+        }
+    }
+}

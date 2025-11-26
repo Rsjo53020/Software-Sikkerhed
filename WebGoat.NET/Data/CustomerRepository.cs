@@ -15,12 +15,12 @@ namespace WebGoatCore.Data
 
         public Customer? GetCustomerByUsername(string username)
         {
-            return _context.Customers.FirstOrDefault(c => c.ContactName == username);
+            return _context.Customers.FirstOrDefault(c => c.ContactName.Value == username);
         }
 
         public Customer GetCustomerByCustomerId(string customerId)
         {
-            return _context.Customers.Single(c => c.CustomerId == customerId);
+            return _context.Customers.Single(c => c.CustomerId.Value == customerId);
         }
 
         public void SaveCustomer(Customer customer)
@@ -32,26 +32,47 @@ namespace WebGoatCore.Data
         //TODO: Add try/catch logic
         public string CreateCustomer(string companyName, string contactName, string? address, string? city, string? region, string? postalCode, string? country)
         {
-            var customerId = GenerateCustomerId(companyName);
-            var customer = new Customer()
+            try
             {
-                CompanyName = companyName,
-                CustomerId = customerId,
-                ContactName = contactName,
-                Address = address,
-                City = city,
-                Region = region,
-                PostalCode = postalCode,
-                Country = country
-            };
+                var customerId = GenerateCustomerId(companyName);
+                
+                // Strongly typed domain primitives
+                var newCompanyName = new CompanyName(companyName);
+                var newContactName = new ContactName(contactName);
+
+                Address? newAddress = CreateIfNotNull<Address>(address);
+                City? newCity = CreateIfNotNull<City>(city);
+                Region? newRegion = CreateIfNotNull<Region>(region);
+                PostalCode? newPostalCode = CreateIfNotNull<PostalCode>(postalCode);
+                Country? newCountry = CreateIfNotNull<Country>(country);
+                
+                var customer = new Customer(
+                    new CustomerId(customerId),
+                    newCompanyName,
+                    newContactName,
+                    null,
+                    newAddress,
+                    newCity,
+                    newRegion,
+                    newPostalCode,
+                    newCountry,
+                    null,
+                    null
+                    );
+            
             _context.Customers.Add(customer);
             _context.SaveChanges();
             return customerId;
         }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Could not create customer", ex);
+            }
+        }
 
         public bool CustomerIdExists(string customerId)
         {
-            return _context.Customers.Any(c => c.CustomerId == customerId);
+            return _context.Customers.Any(c => c.CustomerId.Value == customerId);
         }
 
         /// <summary>Returns an unused CustomerId based on the company name</summary>
@@ -67,6 +88,15 @@ namespace WebGoatCore.Data
                 customerId = customerId.Substring(0, 4) + "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[random.Next(35)];
             }
             return customerId;
+        }
+        private T? CreateIfNotNull<T>(string? value) where T : class
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            return Activator.CreateInstance(typeof(T), value) as T;
         }
     }
 }

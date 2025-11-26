@@ -47,7 +47,11 @@ namespace WebGoatCore.Controllers
             _model = new CheckoutViewModel();
 
             _model.Cart = HttpContext.Session.Get<Cart>("Cart");
-            _model.AvailableExpirationYears = Enumerable.Range(1, 5).Select(i => DateTime.Now.Year + i).ToList();
+            _model.AvailableExpirationYears = Enumerable
+            .Range(1, 5)
+            .Select(i => DateTime.Now.Year + i)
+            .ToList();
+
             _model.ShippingOptions = _shipperRepository.GetShippingOptions(_model.Cart?.SubTotal ?? 0);
 
             if (_model.Cart == null || _model.Cart.OrderDetails.Count == 0)
@@ -61,16 +65,16 @@ namespace WebGoatCore.Controllers
                 var creditCard = GetCreditCardForUser();
 
                 creditCard.GetCardForUser();
-                _model.CreditCard = creditCard.Number;
-                _model.ExpirationMonth = creditCard.Expiry.Month;
-                _model.ExpirationYear = creditCard.Expiry.Year;
 
-                _model.ShipTarget = customer.CompanyName;
-                _model.Address = customer.Address ?? string.Empty;
-                _model.City = customer.City ?? string.Empty;
-                _model.Region = customer.Region ?? string.Empty;
-                _model.PostalCode = customer.PostalCode ?? string.Empty;
-                _model.Country = customer.Country ?? string.Empty;
+                _model.CreditCard      = creditCard.Number;
+                _model.ExpirationMonth = creditCard.Expiry.Month;
+                _model.ExpirationYear  = creditCard.Expiry.Year;
+                _model.ShipTarget = customer.CompanyName.Value;
+                _model.Address = customer.Address?.Value ?? string.Empty;
+                _model.City = customer.City?.Value ?? string.Empty;
+                _model.Region = customer.Region?.Value ?? string.Empty;
+                _model.PostalCode = customer.PostalCode?.Value ?? string.Empty;
+                _model.Country = customer.Country?.Value ?? string.Empty;
             }
         }
 
@@ -131,7 +135,7 @@ namespace WebGoatCore.Controllers
                 ShipPostalCode = model.PostalCode,
                 ShipCountry = model.Country,
                 OrderDetails = model.Cart.OrderDetails.Values.ToList(),
-                CustomerId = customer.CustomerId,
+                CustomerId = customer.CustomerId.Value,
                 OrderDate = DateTime.Now,
                 RequiredDate = DateTime.Now.AddDays(7),
                 Freight = Math.Round(_shipperRepository.GetShipperByShipperId(model.ShippingMethod).GetShippingCost(model.Cart.SubTotal), 2),
@@ -194,7 +198,7 @@ namespace WebGoatCore.Controllers
                 return View();
             }
 
-            return View(_orderRepository.GetAllOrdersByCustomerId(customer.CustomerId));
+            return View(_orderRepository.GetAllOrdersByCustomerId(customer.CustomerId.Value));
         }
 
         public IActionResult PackageTracking(string? carrier, string? trackingNumber)
@@ -208,7 +212,7 @@ namespace WebGoatCore.Controllers
             var customer = GetCustomerOrAddError();
             if (customer != null)
             {
-                model.Orders = _orderRepository.GetAllOrdersByCustomerId(customer.CustomerId);
+                model.Orders = _orderRepository.GetAllOrdersByCustomerId(customer.CustomerId.Value);
             }
             
             return View(model);

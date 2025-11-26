@@ -135,13 +135,13 @@ namespace WebGoatCore.Controllers
 
             return View(new ChangeAccountInfoViewModel()
             {
-                CompanyName = customer.CompanyName,
-                ContactTitle = customer.ContactTitle,
-                Address = customer.Address,
-                City = customer.City,
-                Region = customer.Region,
-                PostalCode = customer.PostalCode,
-                Country = customer.Country,
+                CompanyName = customer.CompanyName.Value,
+                ContactTitle = customer.ContactTitle?.Value,
+                Address = customer.Address?.Value,
+                City = customer.City?.Value,
+                Region = customer.Region?.Value,
+                PostalCode = customer.PostalCode?.Value,
+                Country = customer.Country?.Value,
             });
         }
 
@@ -157,18 +157,44 @@ namespace WebGoatCore.Controllers
 
             if (ModelState.IsValid)
             {
-                customer.CompanyName = model.CompanyName ?? customer.CompanyName;
-                customer.ContactTitle = model.ContactTitle ?? customer.ContactTitle;
-                customer.Address = model.Address ?? customer.Address;
-                customer.City = model.City ?? customer.City;
-                customer.Region = model.Region ?? customer.Region;
-                customer.PostalCode = model.PostalCode ?? customer.PostalCode;
-                customer.Country = model.Country ?? customer.Country;
+                CompanyName? companyName = string.IsNullOrWhiteSpace(model.CompanyName)
+            ? null: new CompanyName(model.CompanyName!);
+            
+            ContactTitle? contactTitle = string.IsNullOrWhiteSpace(model.ContactTitle)
+            ? null: new ContactTitle(model.ContactTitle!);
+            
+            Address? address = string.IsNullOrWhiteSpace(model.Address)
+            ? null: new Address(model.Address!);
+            
+            City? city = string.IsNullOrWhiteSpace(model.City)
+            ? null: new City(model.City!);
+            
+            Region? region = string.IsNullOrWhiteSpace(model.Region)
+            ? null: new Region(model.Region!);
+            
+            PostalCode? postalCode = string.IsNullOrWhiteSpace(model.PostalCode)
+            ? null: new PostalCode(model.PostalCode!);
+            
+            Country? country = string.IsNullOrWhiteSpace(model.Country)
+            ? null: new Country(model.Country!);
+            
+            customer.ChangeAccountInfo(
+                companyName,
+                contactTitle,
+                address,
+                city,
+                region,
+                postalCode,
+                country
+                );
+
+                
+
                 _customerRepository.SaveCustomer(customer);
 
                 model.UpdatedSucessfully = true;
             }
-
+            
             return View(model);
         }
 
