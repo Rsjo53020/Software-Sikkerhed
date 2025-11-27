@@ -1,22 +1,11 @@
-﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-
-namespace WebGoatCore.Models
+namespace WebGoatCore.ViewModels
 {
-    public class BlogResponse
+    public class BlogResponseViewModel
     {
-        public int Id { get; set; }
-
         [Required]
         public int BlogEntryId { get; set; }
-
-        [Required]
-        public DateTime ResponseDate { get; set; }
-
-        [Required]
-        [StringLength(100)]
-        public string Author { get; set; } = string.Empty;
 
         [Required]
         [StringLength(500, MinimumLength = 5,
@@ -26,8 +15,6 @@ namespace WebGoatCore.Models
         )]
         public string Contents { get; set; } = string.Empty;
 
-        public virtual BlogEntry? BlogEntry { get; set; }
-
-        
+        public BlogEntryViewModel? BlogEntry { get; set; }
     }
 }

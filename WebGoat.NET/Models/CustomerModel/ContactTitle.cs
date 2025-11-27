@@ -1,4 +1,6 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebGoatCore.Models
 {
@@ -6,24 +8,25 @@ namespace WebGoatCore.Models
     /// Domain primitive for kontakt-titel (f.eks. "CEO", "Sales Manager").
     /// Tom/whitespace er ikke tilladt, når den bruges.
     /// </summary>
-    public sealed class ContactTitle
+    [Owned]
+    public class ContactTitle
     {
-        public string Value { get; }
+        [Required]
+        [StringLength(30, MinimumLength = 1, ErrorMessage = "Contact title must be between 1 and 30 characters.")]
+        [RegularExpression(@"^[a-zA-ZÆØÅæøå\s\-]+$", ErrorMessage = "Contact title contains invalid characters.")]
+        public string Value { get; private set; } = string.Empty;
 
+        protected ContactTitle() { }
+        
         public ContactTitle(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Contact title cannot be empty.");
-
-            value = value.Trim();
-
-            if (value.Length > 30)
-                throw new ArgumentException("Contact title must be at most 30 characters.");
-
-            if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"^[a-zA-ZÆØÅæøå\s\-]+$"))
-                throw new ArgumentException("Contact title contains invalid characters.");
-
             Value = value;
         }
+    
+        public static implicit operator ContactTitle?(string value)
+            => string.IsNullOrWhiteSpace(value) ? null : new ContactTitle(value);
+
+        public override string ToString() => Value;
     }
+
 }

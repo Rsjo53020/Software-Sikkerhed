@@ -1,24 +1,34 @@
-using System;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
-/// <summary>
-/// Domain Primitive – repræsenterer et validt kontakt navn.
-/// Beskytter imod injektion, tomme navne osv.
-/// </summary>
-public sealed class ContactName
+namespace WebGoatCore.Models
 {
-    public string Value { get; }
-
-    public ContactName(string value)
+    /// <summary>
+    /// Domain Primitive – repræsenterer et validt kontakt navn.
+    /// Beskytter imod injektion, tomme navne osv.
+    /// </summary>
+    [Owned]
+    public class ContactName
     {
-        if (string.IsNullOrWhiteSpace(value))
-            throw new ArgumentException("Contact name cannot be empty.");
+        [Required]
+        [StringLength(30, 
+        ErrorMessage = "Contact name must be under 30 characters.")]
+        [RegularExpression(@"^[a-zA-ZÆØÅæøå\s\-]+$",
+        ErrorMessage = "Contact name contains invalid characters."
+)]
+        public virtual string Value { get; private set; } = string.Empty;
 
-        if (value.Length > 30)
-            throw new ArgumentException("Contact name must be under 30 characters.");
-        
-        if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"^[a-zA-ZÆØÅæøå\s\-]+$"))
-            throw new ArgumentException("Contact name contains invalid characters.");
+        protected ContactName() { }
 
-        Value = value.Trim();
+        public ContactName(string value)
+        {
+            Value = value;
+        }
+
+
+        public static implicit operator ContactName?(string? value)
+            => string.IsNullOrWhiteSpace(value) ? null : new ContactName(value);
+
+        public override string ToString() => Value;
     }
 }

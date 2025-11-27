@@ -1,5 +1,6 @@
 using System;
-using System.Text.RegularExpressions;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebGoatCore.Models
 {
@@ -7,23 +8,23 @@ namespace WebGoatCore.Models
     /// Domain primitive for faxnummer.
     /// Samme format-regler som for PhoneNumber.
     /// </summary>
-    public sealed class FaxNumber
+    [Owned]
+    public class FaxNumber
     {
-        private static readonly Regex Pattern = new(@"^[0-9+\-() ]{6,20}$");
-
-        public string Value { get; }
-
+        [Required]
+        [RegularExpression(@"^[0-9+\-() ]{6,20}$", ErrorMessage = "Fax number contains invalid characters.")]
+        public string Value { get; private set; } = string.Empty;
+        protected FaxNumber() { }
+        
         public FaxNumber(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Fax number cannot be empty.");
-
-            value = value.Trim();
-
-            if (!Pattern.IsMatch(value))
-                throw new ArgumentException("Invalid fax number format.");
-
             Value = value;
         }
+
+        public static implicit operator FaxNumber?(string? value)
+            => string.IsNullOrWhiteSpace(value) ? null : new FaxNumber(value);
+
+        public override string ToString() => Value;
+
     }
 }

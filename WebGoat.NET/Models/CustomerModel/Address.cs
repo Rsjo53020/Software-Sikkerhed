@@ -1,30 +1,32 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebGoatCore.Models
 {
     /// <summary>
     /// Domain primitive for adresse-linje.
     /// </summary>
-    public sealed class Address
+    [Owned]
+    public class Address
     {
-        public string Value { get; }
+        [Required]
+        [StringLength(50, MinimumLength = 3, 
+        ErrorMessage = "Address must be between 3 and 50 characters.")]
+        [RegularExpression(@"^[a-zA-Z0-9ÆØÅæøå\s\-]+$", 
+        ErrorMessage = "Address contains invalid characters.")]
+        public virtual string Value { get; private set; } = string.Empty;
+
+        protected Address() { }
 
         public Address(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Address cannot be empty.");
-
-            value = value.Trim();
-
-            // length check bewetween 3 and 50 characters
-            if (value.Length < 3 || value.Length > 50)
-                throw new ArgumentException("Address must be between 3 and 50 characters.");
-
-            // regex for no special characters other than space,and hyphen
-            if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"^[a-zA-Z0-9ÆØÅæøå\s\-]+$"))
-                throw new ArgumentException("Address contains invalid characters.");
-                
             Value = value;
         }
+
+        public static implicit operator Address?(string value)
+        => string.IsNullOrWhiteSpace(value) ? null : new Address(value);
+
+        public override string ToString() => Value;
     }
 }

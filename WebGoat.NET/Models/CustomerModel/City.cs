@@ -1,29 +1,30 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebGoatCore.Models
 {
     /// <summary>
     /// Domain primitive for bynavn.
     /// </summary>
-    public sealed class City
+    [Owned]
+    public class City
     {
-        public string Value { get; }
+        [Required]
+        [StringLength(50, MinimumLength = 3, ErrorMessage = "City must be between 3 and 50 characters.")]
+        [RegularExpression(@"^[a-zA-ZÆØÅæøå\s\-]+$", ErrorMessage = "City contains invalid characters.")]
+        public string Value { get; private set; } = string.Empty;
+
+        protected City() { }
 
         public City(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("City cannot be empty.");
-
-            value = value.Trim();
-
-            if (value.Length > 50)
-                throw new ArgumentException("City must be at most 50 characters.");
-
-            // regex for no special characters other than space,and hyphen
-            if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"^[a-zA-ZÆØÅæøå\s\-]+$"))
-                throw new ArgumentException("City contains invalid characters.");
-
             Value = value;
         }
+
+        public static implicit operator City?(string value)
+        => string.IsNullOrWhiteSpace(value) ? null : new City(value);
+
+        public override string ToString() => Value;
     }
 }

@@ -270,7 +270,6 @@ namespace WebGoatCore.Controllers
                     }
                 }
             }
-
             model.CreatedUser = true;
             return View(model);
         }

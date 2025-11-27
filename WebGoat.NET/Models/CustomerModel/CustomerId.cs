@@ -1,24 +1,28 @@
 using System;
-using System.Text.RegularExpressions;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
+
+
 
 /// <summary>
 /// Domain Primitive – sikrer at CustomerId altid er gyldig.
 /// Fjerner shallow models (Secure by Design kap. 5).
 /// </summary>
-public sealed class CustomerId
+[Owned]
+public class CustomerId
 {
-    private static readonly Regex Pattern = new("^[A-Z]{5}$");
-
-    public string Value { get; }
+    [Required]
+    [RegularExpression(@"^[A-Z]{5}$", ErrorMessage = "CustomerId must be 5 uppercase letters.")]
+    public string Value { get; private set; } = string.Empty;
+    // For Entity Framework
+    protected CustomerId() { }
 
     public CustomerId(string value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            throw new ArgumentException("CustomerId cannot be empty.");
-
-        if (!Pattern.IsMatch(value))
-            throw new ArgumentException("CustomerId must be 5 uppercase letters.");
-
         Value = value;
     }
+    public static implicit operator CustomerId?(string? value)
+            => string.IsNullOrWhiteSpace(value) ? null : new CustomerId(value);
+
+    public override string ToString() => Value;
 }

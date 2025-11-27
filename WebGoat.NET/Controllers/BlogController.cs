@@ -3,6 +3,8 @@ using WebGoatCore.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using WebGoatCore.ViewModels;
+using System.Linq;
 
 namespace WebGoatCore.Controllers
 {
@@ -20,28 +22,83 @@ namespace WebGoatCore.Controllers
 
         public IActionResult Index()
         {
-            return View(_blogEntryRepository.GetTopBlogEntries());
+            var entries = _blogEntryRepository.GetTopBlogEntries();
+
+            var viewModels = entries.Select(e => new BlogEntryViewModel
+            {
+                Id = e.Id,
+                Title = e.Title,
+                Contents = e.Contents,
+                PostedDate = e.PostedDate,
+                Author = e.Author
+            }).ToList();
+
+            return View(viewModels);
         }
 
         [HttpGet("{entryId}")]
         public IActionResult Reply(int entryId)
         {
-            return View(_blogEntryRepository.GetBlogEntry(entryId));
+            var entry = _blogEntryRepository.GetBlogEntry(entryId);
+
+            if (entry == null)
+            {
+                TempData["Error"] = "The blog entry you are trying to respond to does not exist.";
+                return RedirectToAction("Index");
+            }
+            var entryVm = new BlogEntryViewModel
+            {
+                Id = entry.Id,
+                Title = entry.Title,
+                PostedDate = entry.PostedDate,
+                Contents = entry.Contents,
+                Author = entry.Author
+            };
+
+            var responseVm = new BlogResponseViewModel
+            {
+                BlogEntryId = entryId,
+                BlogEntry = entryVm
+            };
+
+            return View(responseVm);
         }
 
         [HttpPost("{entryId}")]
-        public IActionResult Reply(int entryId, string contents)
+        public IActionResult Reply(BlogResponseViewModel model)
         {
+
             var userName = User?.Identity?.Name ?? "Anonymous";
-            var response = new BlogResponse()
+
+            // RATE LIMIT: max 5 responses per hour per user
+            var responsesLastHour = _blogResponseRepository.CountResponsesByAuthorLastHour(userName);
+            if (responsesLastHour >= 5)
+            {
+                TempData["Error"] = "You have already posted 5 responses within the last hour. Please try again later.";
+                return RedirectToAction("Index");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Your response does not meet the requirements (length or illegal characters).";
+                return RedirectToAction("Index");
+            }
+
+            var response = new BlogResponse
             {
                 Author = userName,
-                Contents = contents,
-                BlogEntryId = entryId,
+                Contents = model.Contents,
+                BlogEntryId = model.BlogEntryId,
                 ResponseDate = DateTime.Now
             };
-            _blogResponseRepository.CreateBlogResponse(response);
 
+            if (!_blogResponseRepository.CreateBlogResponse(response))
+            {
+                TempData["Error"] = "An error occurred while saving your response. Please try again later.";
+                return RedirectToAction("Index");
+            }
+
+            TempData["Message"] = "Your response has been saved.";
             return RedirectToAction("Index");
         }
 
@@ -56,6 +113,5 @@ namespace WebGoatCore.Controllers
             var blogEntry = _blogEntryRepository.CreateBlogEntry(title, contents, User!.Identity!.Name!);
             return View(blogEntry);
         }
-
     }
 }
