@@ -1,25 +1,28 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebGoatCore.Models
 {
     /// <summary>
     /// Domain primitive for region/delstat.
     /// </summary>
-    public sealed class Region
+    [Owned]
+    public class Region
     {
-        public string Value { get; }
+        [Required]
+        [StringLength(100, ErrorMessage = "Region must be at most 100 characters.")]
+        public string Value { get; private set; } = string.Empty;
+        protected Region() { }
 
         public Region(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Region cannot be empty.");
-
-            value = value.Trim();
-
-            if (value.Length > 100)
-                throw new ArgumentException("Region must be at most 100 characters.");
-
             Value = value;
         }
+        
+        public static implicit operator Region?(string? value)
+            => string.IsNullOrWhiteSpace(value) ? null : new Region(value);
+
+        public override string ToString() => Value;
     }
 }

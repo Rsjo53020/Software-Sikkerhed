@@ -14,6 +14,7 @@ using System.Reflection;
 using Microsoft.Extensions.FileProviders;
 using WebGoatCore.Controllers;
 using WebGoatCore.Exceptions;
+using Microsoft.Extensions.Logging;
 
 namespace WebGoatCore
 {
@@ -74,12 +75,13 @@ namespace WebGoatCore
             services.Configure<IdentityOptions>(options =>
             {
                 // Password settings.
-                options.Password.RequireDigit = false;
-                options.Password.RequireLowercase = false;
+                //TODO - adjust according to our needs
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
                 options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequireUppercase = false;
-                options.Password.RequiredLength = 2;
-                options.Password.RequiredUniqueChars = 0;
+                options.Password.RequireUppercase = true;
+                options.Password.RequiredLength = 8;
+                options.Password.RequiredUniqueChars = 1;
 
                 // Lockout settings.
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
@@ -126,8 +128,6 @@ namespace WebGoatCore
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-           
-
             app.UseStatusCodePagesWithRedirects($"/{StatusCodeController.NAME}?code={{0}}");
 
             app.UseStaticFiles();
@@ -147,13 +147,6 @@ namespace WebGoatCore
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}");
             });
-        }
-        
-        public int startupNotUsed(int a, int b) // Function added to generate same FA Violation
-        {
-            var c = 1;
-            b = 0;
-            return a / b;
         }
     }
 }

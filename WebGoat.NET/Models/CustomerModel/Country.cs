@@ -1,4 +1,6 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebGoatCore.Models
 {
@@ -6,24 +8,24 @@ namespace WebGoatCore.Models
     /// Domain primitive for landekode.
     /// Her bruger vi ISO 3166-1 alpha-2 (f.eks. "DK", "SE", "US").
     /// </summary>
-    public sealed class Country
+    [Owned]
+    public class Country
     {
-        public string Value { get; }
+        [Required]
+        [StringLength(2, MinimumLength = 2, ErrorMessage = "Country must be a 2-letter ISO code.")]
+        [RegularExpression(@"^[A-Z]{2}$", ErrorMessage = "Country contains invalid characters.")]
+        public string Value { get; private set; } = string.Empty;
 
+        protected Country() { }
+        
         public Country(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Country cannot be empty.");
-
-            value = value.Trim().ToUpperInvariant();
-
-            if (value.Length != 2)
-                throw new ArgumentException("Country must be a 2-letter ISO code.");
-
-            if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"^[A-Z]{2}$"))
-                throw new ArgumentException("Country contains invalid characters.");
-
             Value = value;
         }
+
+        public static implicit operator Country?(string value)
+            => string.IsNullOrWhiteSpace(value) ? null : new Country(value);
+
+        public override string ToString() => Value;
     }
 }

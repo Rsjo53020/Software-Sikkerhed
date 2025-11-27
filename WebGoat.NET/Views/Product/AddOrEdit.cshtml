@@ -16,20 +16,20 @@
         <legend>Product information</legend>
         @if (!Model.AddsNew)
         {
-            Html.HiddenFor(m => m.Product.ProductId);
-            Html.HiddenFor(m => m.Product.SupplierId);
+            Html.HiddenFor(m => m.Product!.ProductId);
+            Html.HiddenFor(m => m.Product!.SupplierId);
             <p>
-                @Html.LabelFor(m => m.Product.ProductId)
+                @Html.LabelFor(m => m.Product!.ProductId)
                 <span class="textEntry">@Model.Product?.ProductId</span>
             </p>
         }
         <p>
-            @Html.LabelFor(m => m.Product.ProductName)
-            @Html.TextBoxFor(m => m.Product.ProductName, new { @value = Model.Product?.ProductName })
-            @Html.ValidationMessageFor(m => m.Product.ProductName)
+            @Html.LabelFor(m => m.Product!.ProductName)
+            @Html.TextBoxFor(m => m.Product!.ProductName, new { @value = Model.Product?.ProductName })
+            @Html.ValidationMessageFor(m => m.Product!.ProductName)
         </p>
         <p>
-            @Html.LabelFor(m => m.Product.Category)
+            @Html.LabelFor(m => m.Product!.Category)
             <select asp-for="Product.CategoryId">
                 @foreach (var category in Model.ProductCategories)
                 {
@@ -42,34 +42,34 @@
             </select>
         </p>
         <p>
-            @Html.LabelFor(m => m.Product.QuantityPerUnit)
-            @Html.TextBoxFor(m => m.Product.QuantityPerUnit, new { @value = Model.Product?.QuantityPerUnit })
-            @Html.ValidationMessageFor(m => m.Product.QuantityPerUnit)
+            @Html.LabelFor(m => m.Product!.QuantityPerUnit)
+            @Html.TextBoxFor(m => m.Product!.QuantityPerUnit, new { @value = Model.Product?.QuantityPerUnit })
+            @Html.ValidationMessageFor(m => m.Product!.QuantityPerUnit)
         </p>
         <p>
-            @Html.LabelFor(m => m.Product.DecimalUnitPrice)
-            @Html.TextBoxFor(m => m.Product.DecimalUnitPrice, new { @value = Model.Product?.DecimalUnitPrice })
-            @Html.ValidationMessageFor(m => m.Product.DecimalUnitPrice)
+            @Html.LabelFor(m => m.Product!.DecimalUnitPrice)
+            @Html.TextBoxFor(m => m.Product!.DecimalUnitPrice, new { @value = Model.Product?.DecimalUnitPrice })
+            @Html.ValidationMessageFor(m => m.Product!.DecimalUnitPrice)
         </p>
         <p>
-            @Html.LabelFor(m => m.Product.UnitsInStock)
-            @Html.TextBoxFor(m => m.Product.UnitsInStock, new { @value = Model.Product?.UnitsInStock })
-            @Html.ValidationMessageFor(m => m.Product.UnitsInStock)
+            @Html.LabelFor(m => m.Product!.UnitsInStock)
+            @Html.TextBoxFor(m => m.Product!.UnitsInStock, new { @value = Model.Product?.UnitsInStock })
+            @Html.ValidationMessageFor(m => m.Product!.UnitsInStock)
         </p>
         <p>
-            @Html.LabelFor(m => m.Product.UnitsOnOrder)
-            @Html.TextBoxFor(m => m.Product.UnitsOnOrder, new { @value = Model.Product?.UnitsOnOrder })
-            @Html.ValidationMessageFor(m => m.Product.UnitsOnOrder)
+            @Html.LabelFor(m => m.Product!.UnitsOnOrder)
+            @Html.TextBoxFor(m => m.Product!.UnitsOnOrder, new { @value = Model.Product?.UnitsOnOrder })
+            @Html.ValidationMessageFor(m => m.Product!.UnitsOnOrder)
         </p>
         <p>
-            @Html.LabelFor(m => m.Product.ReorderLevel)
-            @Html.TextBoxFor(m => m.Product.ReorderLevel, new { @value = Model.Product?.ReorderLevel })
-            @Html.ValidationMessageFor(m => m.Product.ReorderLevel)
+            @Html.LabelFor(m => m.Product!.ReorderLevel)
+            @Html.TextBoxFor(m => m.Product!.ReorderLevel, new { @value = Model.Product?.ReorderLevel })
+            @Html.ValidationMessageFor(m => m.Product!.ReorderLevel)
         </p>
         @if (Model.AddsNew)
         {
             <p>
-                @Html.LabelFor(m => m.Product.Supplier)
+                @Html.LabelFor(m => m.Product!.Supplier)
                 @if(Model.Suppliers != null)
                 {
                     <select asp-for="Product.SupplierId">
@@ -81,12 +81,12 @@
                         }
                     </select>
                 }
-                @Html.ValidationMessageFor(m => m.Product.Supplier)
+                @Html.ValidationMessageFor(m => m.Product!.Supplier)
             </p>
         }
         <p>
-            @Html.CheckBoxFor(m => m.Product.Discontinued, new { @checked = Model.Product?.Discontinued ?? false })
-            @Html.LabelFor(m => m.Product.Discontinued)
+            @Html.CheckBoxFor(m => m.Product!.Discontinued, new { @checked = Model.Product?.Discontinued ?? false })
+            @Html.LabelFor(m => m.Product!.Discontinued)
         </p>
     </fieldset>
     <p class="submitButton">

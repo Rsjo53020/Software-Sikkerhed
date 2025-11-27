@@ -1,5 +1,6 @@
 using System;
-using System.Text.RegularExpressions;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebGoatCore.Models
 {
@@ -7,23 +8,22 @@ namespace WebGoatCore.Models
     /// Domain primitive for postnummer.
     /// Simpel regel: 3-12 tegn, kun tal/bogstaver/mellemrum/bindestreg.
     /// </summary>
-    public sealed class PostalCode
+    [Owned]
+    public class PostalCode
     {
-        private static readonly Regex Pattern = new(@"^[0-9A-Za-z\- ]{3,12}$");
-
-        public string Value { get; }
+        [Required]
+        [RegularExpression(@"^[0-9A-Za-z\- ]{3,12}$", ErrorMessage = "Postal code contains invalid characters.")]
+        public string Value { get; private set; } = string.Empty;
+        protected PostalCode() { }
 
         public PostalCode(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                throw new ArgumentException("Postal code cannot be empty.");
-
-            value = value.Trim();
-
-            if (!Pattern.IsMatch(value))
-                throw new ArgumentException("Invalid postal code format.");
-
             Value = value;
         }
+        
+        public static implicit operator PostalCode?(string? value)
+            => string.IsNullOrWhiteSpace(value) ? null : new PostalCode(value);
+
+        public override string ToString() => Value;
     }
 }

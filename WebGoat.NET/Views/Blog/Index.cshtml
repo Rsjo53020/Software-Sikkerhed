@@ -1,29 +1,44 @@
-﻿@model IEnumerable<BlogEntry>
+﻿@model IEnumerable<BlogEntryViewModel>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "WebGoat.NetCore Blog";
 }
 
-<h1>
-    WebGoat.NetCore Blog
-</h1>
+@await Html.PartialAsync("_StatusMessage")
+
+<h1>WebGoat.NetCore Blog</h1>
+
 <div>
-    @foreach (var blogEntry in Model)
+    @foreach (var blogEntryViewModel in Model)
     {
         <div class="blogEntry">
-            <partial name="_BlogEntryPartial" model="blogEntry" />
-            @if (blogEntry.Responses.Count > 0)
+            <partial name="_BlogEntryPartial" model="blogEntryViewModel" />
+
+            @if (blogEntryViewModel.Responses != null && blogEntryViewModel.Responses.Count > 0)
             {
                 <div class="blogResponseTitle">Responses</div>
             }
-            @foreach (var response in blogEntry.Responses)
+
+            @if (blogEntryViewModel.Responses != null)
             {
-                <div class="blogResponse">
-                    <div class="blogResponseContents">@response.Contents</div>
-                    <div class="blogResponseSignature">@response.Author - @response.ResponseDate</div>
-                </div>
+                foreach (var response in blogEntryViewModel.Responses)
+                {
+                    <div class="blogResponse">
+                        @* remove raw.html to mitigate XSS *@
+                        <div class="blogResponseContents">@response.Contents</div>
+                        @if (response.BlogEntry != null)
+                        {
+                            <div class="blogResponseSignature">@response.BlogEntry.Author - @response.BlogEntry.PostedDate</div>
+                        }
+                    </div>
+                }
             }
-            <a class="button blogRespondButton" asp-action="Reply" asp-route-entryId=@blogEntry.Id>Respond</a>
+
+            <a class="button blogRespondButton"
+            asp-action="Reply"
+            asp-route-entryId="@blogEntryViewModel.Id">
+                Respond
+            </a>
         </div>
     }
 </div>

@@ -1,27 +1,31 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebGoatCore.Models
 {
-/// <summary>
-/// Domain Primitive – definerer præcis hvad en CompanyName må være.
-/// Der må ikke eksistere ugyldige navne i systemet.
-/// </summary>
-public sealed class CompanyName
-{
-    public string Value { get; }
-
-    public CompanyName(string value)
+    /// <summary>
+    /// Domain Primitive – definerer præcis hvad en CompanyName må være.
+    /// Der må ikke eksistere ugyldige navne i systemet.
+    /// </summary>
+    [Owned]
+    public class CompanyName
     {
-        if (string.IsNullOrWhiteSpace(value))
-            throw new ArgumentException("Company name cannot be empty.");
+        [Required]
+        [StringLength(100, MinimumLength = 1, ErrorMessage = "Company name must be between 1 and 100 characters.")]
+        [RegularExpression(@"^[a-zA-Z0-9ÆØÅæøå\s\-]+$", ErrorMessage = "Company name contains invalid characters.")]
+        public string Value { get; private set; } = string.Empty;
 
-        if (value.Length > 100)
-            throw new ArgumentException("Company name must be under 100 characters.");
+        protected CompanyName() { }
 
-        if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"^[a-zA-Z0-9ÆØÅæøå\s\-]+$"))
-            throw new ArgumentException("Company name contains invalid characters.");
+        public CompanyName(string value)
+        {
+            Value = value;
+        }
 
-        Value = value.Trim();
+        public static implicit operator CompanyName?(string value)
+            => string.IsNullOrWhiteSpace(value) ? null : new CompanyName(value);
+
+        public override string ToString() => Value;
     }
-}
 }
