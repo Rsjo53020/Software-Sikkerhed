@@ -4,7 +4,7 @@ using Xunit;
 
 namespace WebGoat.NET.Tests
 {
-    public class CompanyNameUnitTests
+    public class CompanyNameUnitTest
     {
         [Fact]
         public void GivenValidName_WhenConstructing_ThenReturnsTrimmedInstance()

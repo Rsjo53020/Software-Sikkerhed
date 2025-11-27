@@ -1,25 +1,37 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 
-
 /// <summary>
-/// Domain Primitive – domain-specifik validering af telefonnummer.
-/// Eksempel på at gøre implicit viden eksplicit (Secure by Design kap. 5).
+/// Domain Primitive –> domain-specific validation of phone number.
+/// Example of making implicit knowledge explicit (Secure by Design chapter 5).
 /// </summary>
 [Owned]
 public class PhoneNumber
 {
+    private const string PhoneRegex = @"^[0-9+\-() ]{6,20}$";
 
     [Required]
-    [RegularExpression(@"^[0-9+\-() ]{6,20}$", ErrorMessage = "Phone number contains invalid characters.")]
+    [RegularExpression(PhoneRegex, ErrorMessage = "Phone number contains invalid characters.")]
     public string Value { get; private set; } = string.Empty;
 
     protected PhoneNumber() { }
     
     public PhoneNumber(string value)
     {
-        Value = value;
+        if (value is null)
+            throw new ArgumentException("Phone number cannot be null.", nameof(value));
+
+        var trimmed = value.Trim();
+
+        if (string.IsNullOrWhiteSpace(trimmed))
+            throw new ArgumentException("Phone number cannot be empty.", nameof(value));
+
+        if (!Regex.IsMatch(trimmed, PhoneRegex))
+            throw new ArgumentException("Phone number contains invalid characters.", nameof(value));
+
+        Value = trimmed;
     }
 
     public static implicit operator PhoneNumber?(string? value)
