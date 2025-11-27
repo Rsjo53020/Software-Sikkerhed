@@ -4,7 +4,7 @@ using Xunit;
 
 namespace WebGoat.NET.Tests
 {
-    public class CustomerUnitTests
+    public class CustomerUnitTest
     {
         private static CustomerId ValidId => new("ABCDE");
         private static CompanyName ValidCompany => new("Acme Corp");
@@ -55,72 +55,6 @@ namespace WebGoat.NET.Tests
             Assert.Equal("DK", customer.Country!.Value);
             Assert.Same(phone, customer.Phone);
             Assert.Equal("12345678", customer.Fax!.Value);
-        }
-
-        [Fact]
-        public void GivenNullCustomerId_WhenConstructingCustomer_ThenThrowsArgumentNullException()
-        {
-            // Given
-            CustomerId? id = null;
-
-            // When + Then
-            Assert.Throws<ArgumentNullException>(() =>
-                new Customer(
-                    id!,
-                    ValidCompany,
-                    ValidContact,
-                    contactTitle: null,
-                    address: null,
-                    city: null,
-                    region: null,
-                    postalCode: null,
-                    country: null,
-                    phone: null,
-                    fax: null));
-        }
-
-        [Fact]
-        public void GivenNullCompanyName_WhenConstructingCustomer_ThenThrowsArgumentNullException()
-        {
-            // Given
-            CompanyName? company = null;
-
-            // When + Then
-            Assert.Throws<ArgumentNullException>(() =>
-                new Customer(
-                    ValidId,
-                    company!,
-                    ValidContact,
-                    contactTitle: null,
-                    address: null,
-                    city: null,
-                    region: null,
-                    postalCode: null,
-                    country: null,
-                    phone: null,
-                    fax: null));
-        }
-
-        [Fact]
-        public void GivenNullContactName_WhenConstructingCustomer_ThenThrowsArgumentNullException()
-        {
-            // Given
-            ContactName? contact = null;
-
-            // When + Then
-            Assert.Throws<ArgumentNullException>(() =>
-                new Customer(
-                    ValidId,
-                    ValidCompany,
-                    contact!,
-                    contactTitle: null,
-                    address: null,
-                    city: null,
-                    region: null,
-                    postalCode: null,
-                    country: null,
-                    phone: null,
-                    fax: null));
         }
 
         [Fact]

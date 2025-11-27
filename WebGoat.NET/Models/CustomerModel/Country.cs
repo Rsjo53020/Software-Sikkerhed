@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 
 namespace WebGoatCore.Models
@@ -11,19 +12,32 @@ namespace WebGoatCore.Models
     [Owned]
     public class Country
     {
+        private const string CountryRegex = @"^[A-Z]{2}$";
+
         [Required]
         [StringLength(2, MinimumLength = 2, ErrorMessage = "Country must be a 2-letter ISO code.")]
-        [RegularExpression(@"^[A-Z]{2}$", ErrorMessage = "Country contains invalid characters.")]
+        [RegularExpression(CountryRegex, ErrorMessage = "Country contains invalid characters.")]
         public string Value { get; private set; } = string.Empty;
 
         protected Country() { }
-        
+
         public Country(string value)
         {
-            Value = value;
+            if (value is null)
+                throw new ArgumentException("Country cannot be null.", nameof(value));
+
+            var trimmed = value.Trim().ToUpperInvariant();
+
+            if (string.IsNullOrWhiteSpace(trimmed))
+                throw new ArgumentException("Country cannot be empty.", nameof(value));
+
+            if (!Regex.IsMatch(trimmed, CountryRegex))
+                throw new ArgumentException("Country must be a 2-letter uppercase ISO code (A-Z).", nameof(value));
+
+            Value = trimmed;
         }
 
-        public static implicit operator Country?(string value)
+        public static implicit operator Country?(string? value)
             => string.IsNullOrWhiteSpace(value) ? null : new Country(value);
 
         public override string ToString() => Value;

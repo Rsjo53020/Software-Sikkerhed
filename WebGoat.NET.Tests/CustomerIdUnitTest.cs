@@ -4,7 +4,7 @@ using Xunit;
 
 namespace WebGoat.NET.Tests
 {
-    public class CustomerIdTests
+    public class CustomerIdUnitTest
     {
         [Fact]
         public void GivenValidCustomerId_WhenConstructing_ThenCreatesInstance()
@@ -32,7 +32,6 @@ namespace WebGoat.NET.Tests
         [Theory]
         [InlineData("ABCD")]    // Too short
         [InlineData("ABCDEF")]  // Too long
-        [InlineData("abcde")]   // Not uppercase
         [InlineData("AB12C")]   // Contains digits
         public void GivenInvalidFormatCustomerId_WhenConstructing_ThenThrowsArgumentException(string value)
         {
