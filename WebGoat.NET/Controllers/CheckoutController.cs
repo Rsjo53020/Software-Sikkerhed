@@ -59,9 +59,24 @@ namespace WebGoatCore.Controllers
                 ModelState.AddModelError(string.Empty, "You have no items in your cart.");
             }
 
-            var customer = GetCustomerOrAddError();
-            if (customer != null)
+            var customerDM = GetCustomerOrAddError();
+            if (customerDM != null)
             {
+                //map from CustomerDM to CustomerEntity
+                var customerEntity = new Customer()
+                {
+                    CustomerId = customerDM.CustomerId.Value,
+                    CompanyName = customerDM.CompanyName.Value,
+                    ContactName = customerDM.ContactName.Value,
+                    ContactTitle = customerDM.ContactTitle?.Value,
+                    Address = customerDM.Address?.Value,
+                    City = customerDM.City?.Value,
+                    Region = customerDM.Region?.Value,
+                    PostalCode = customerDM.PostalCode?.Value,
+                    Country = customerDM.Country?.Value,
+                    Phone = customerDM.Phone?.Value,
+                    Fax = customerDM.Fax?.Value
+                };
                 var creditCard = GetCreditCardForUser();
 
                 creditCard.GetCardForUser();
@@ -69,12 +84,12 @@ namespace WebGoatCore.Controllers
                 _model.CreditCard      = creditCard.Number;
                 _model.ExpirationMonth = creditCard.Expiry.Month;
                 _model.ExpirationYear  = creditCard.Expiry.Year;
-                _model.ShipTarget = customer.CompanyName.Value;
-                _model.Address = customer.Address?.Value ?? string.Empty;
-                _model.City = customer.City?.Value ?? string.Empty;
-                _model.Region = customer.Region?.Value ?? string.Empty;
-                _model.PostalCode = customer.PostalCode?.Value ?? string.Empty;
-                _model.Country = customer.Country?.Value ?? string.Empty;
+                _model.ShipTarget = customerEntity.CompanyName;
+                _model.Address = customerEntity.Address ?? string.Empty;
+                _model.City = customerEntity.City ?? string.Empty;
+                _model.Region = customerEntity.Region ?? string.Empty;
+                _model.PostalCode = customerEntity.PostalCode ?? string.Empty;
+                _model.Country = customerEntity.Country ?? string.Empty;
             }
         }
 
@@ -83,8 +98,8 @@ namespace WebGoatCore.Controllers
         {
             model.Cart = HttpContext.Session.Get<Cart>("Cart")!;
 
-            var customer = GetCustomerOrAddError();
-            if(customer == null)
+            var customerDM = GetCustomerOrAddError();
+            if(customerDM == null)
             {
                 return View(model);
             }
@@ -125,6 +140,22 @@ namespace WebGoatCore.Controllers
                 creditCard.SaveCardForUser();
             }
 
+            //map from CustomerDM to CustomerEntity
+                var customerEntity = new Customer()
+                {
+                    CustomerId = customerDM.CustomerId.Value,
+                    CompanyName = customerDM.CompanyName.Value,
+                    ContactName = customerDM.ContactName.Value,
+                    ContactTitle = customerDM.ContactTitle?.Value,
+                    Address = customerDM.Address?.Value,
+                    City = customerDM.City?.Value,
+                    Region = customerDM.Region?.Value,
+                    PostalCode = customerDM.PostalCode?.Value,
+                    Country = customerDM.Country?.Value,
+                    Phone = customerDM.Phone?.Value,
+                    Fax = customerDM.Fax?.Value
+                };
+
             var order = new Order
             {
                 ShipVia = model.ShippingMethod,
@@ -135,7 +166,7 @@ namespace WebGoatCore.Controllers
                 ShipPostalCode = model.PostalCode,
                 ShipCountry = model.Country,
                 OrderDetails = model.Cart.OrderDetails.Values.ToList(),
-                CustomerId = customer.CustomerId.Value,
+                CustomerId = customerEntity.CustomerId,
                 OrderDate = DateTime.Now,
                 RequiredDate = DateTime.Now.AddDays(7),
                 Freight = Math.Round(_shipperRepository.GetShipperByShipperId(model.ShippingMethod).GetShippingCost(model.Cart.SubTotal), 2),
@@ -192,13 +223,28 @@ namespace WebGoatCore.Controllers
 
         public IActionResult Receipts()
         {
-            var customer = GetCustomerOrAddError();
-            if(customer == null)
+            var customerDM = GetCustomerOrAddError();
+            if(customerDM == null)
             {
                 return View();
             }
+            //map from CustomerDM to Customer
+                var customerEntity = new Customer()
+                {
+                    CustomerId = customerDM.CustomerId.Value,
+                    CompanyName = customerDM.CompanyName.Value,
+                    ContactName = customerDM.ContactName.Value,
+                    ContactTitle = customerDM.ContactTitle?.Value,
+                    Address = customerDM.Address?.Value,
+                    City = customerDM.City?.Value,
+                    Region = customerDM.Region?.Value,
+                    PostalCode = customerDM.PostalCode?.Value,
+                    Country = customerDM.Country?.Value,
+                    Phone = customerDM.Phone?.Value,
+                    Fax = customerDM.Fax?.Value
+                };
 
-            return View(_orderRepository.GetAllOrdersByCustomerId(customer.CustomerId.Value));
+            return View(_orderRepository.GetAllOrdersByCustomerId(customerEntity.CustomerId));
         }
 
         public IActionResult PackageTracking(string? carrier, string? trackingNumber)
@@ -209,10 +255,25 @@ namespace WebGoatCore.Controllers
                 SelectedTrackingNumber = trackingNumber,
             };
 
-            var customer = GetCustomerOrAddError();
-            if (customer != null)
+            var customerDM = GetCustomerOrAddError();
+            if (customerDM != null)
             {
-                model.Orders = _orderRepository.GetAllOrdersByCustomerId(customer.CustomerId.Value);
+                //map from CustomerDM to Customer
+                var customerEntity = new Customer()
+                {
+                    CustomerId = customerDM.CustomerId.Value,
+                    CompanyName = customerDM.CompanyName.Value,
+                    ContactName = customerDM.ContactName.Value,
+                    ContactTitle = customerDM.ContactTitle?.Value,
+                    Address = customerDM.Address?.Value,
+                    City = customerDM.City?.Value,
+                    Region = customerDM.Region?.Value,
+                    PostalCode = customerDM.PostalCode?.Value,
+                    Country = customerDM.Country?.Value,
+                    Phone = customerDM.Phone?.Value,
+                    Fax = customerDM.Fax?.Value
+                };
+                model.Orders = _orderRepository.GetAllOrdersByCustomerId(customerEntity.CustomerId);
             }
             
             return View(model);
@@ -223,7 +284,7 @@ namespace WebGoatCore.Controllers
             return Redirect(Order.GetPackageTrackingUrl(carrier, trackingNumber));
         }
 
-        private Customer? GetCustomerOrAddError()
+        private CustomerDM? GetCustomerOrAddError()
         {
             var username = _userManager.GetUserName(User);
             var customer = _customerRepository.GetCustomerByUsername(username);

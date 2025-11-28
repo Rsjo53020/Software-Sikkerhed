@@ -29,7 +29,7 @@ namespace WebGoat.NET.Tests
             var fax          = new FaxNumber("  12345678 ");
 
             // When
-            var customer = new Customer(
+            var customer = new CustomerDM(
                 id,
                 company,
                 contact,
@@ -66,7 +66,7 @@ namespace WebGoat.NET.Tests
             var contact = ValidContact;
 
             // When
-            var customer = new Customer(
+            var customer = new CustomerDM(
                 id,
                 company,
                 contact,

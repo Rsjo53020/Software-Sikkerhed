@@ -126,7 +126,14 @@ namespace WebGoatCore.Controllers
         [HttpGet]
         public IActionResult ChangeAccountInfo()
         {
-            var customer = _customerRepository.GetCustomerByUsername(_userManager.GetUserName(User));
+            var username = _userManager.GetUserName(User);
+            if (username is null)
+            {
+                ModelState.AddModelError(string.Empty, "We don't recognize your login. Please log in and try again.");
+                return View(new ChangeAccountInfoViewModel());
+            }
+
+            var customer = _customerRepository.GetCustomerByUsername(username);
             if (customer == null)
             {
                 ModelState.AddModelError(string.Empty, "We don't recognize your customer Id. Please log in and try again.");
@@ -145,39 +152,38 @@ namespace WebGoatCore.Controllers
             });
         }
 
+
         [HttpPost]
         public IActionResult ChangeAccountInfo(ChangeAccountInfoViewModel model)
         {
-            var customer = _customerRepository.GetCustomerByUsername(_userManager.GetUserName(User));
-            if (customer == null)
+            var username = _userManager.GetUserName(User);
+            if (username is null)
+            {
+                ModelState.AddModelError(string.Empty, "We don't recognize your login. Please log in and try again.");
+                return View(model);
+            }
+
+            var customer = _customerRepository.GetCustomerByUsername(username);
+            if (customer is null)
             {
                 ModelState.AddModelError(string.Empty, "We don't recognize your customer Id. Please log in and try again.");
                 return View(model);
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                CompanyName? companyName = string.IsNullOrWhiteSpace(model.CompanyName)
-            ? null: new CompanyName(model.CompanyName!);
-            
-            ContactTitle? contactTitle = string.IsNullOrWhiteSpace(model.ContactTitle)
-            ? null: new ContactTitle(model.ContactTitle!);
-            
-            Address? address = string.IsNullOrWhiteSpace(model.Address)
-            ? null: new Address(model.Address!);
-            
-            City? city = string.IsNullOrWhiteSpace(model.City)
-            ? null: new City(model.City!);
-            
-            Region? region = string.IsNullOrWhiteSpace(model.Region)
-            ? null: new Region(model.Region!);
-            
-            PostalCode? postalCode = string.IsNullOrWhiteSpace(model.PostalCode)
-            ? null: new PostalCode(model.PostalCode!);
-            
-            Country? country = string.IsNullOrWhiteSpace(model.Country)
-            ? null: new Country(model.Country!);
-            
+                return View(model);
+            }
+
+            // Map fra ViewModel (strings) til domain primitives – med null-håndtering
+            var companyName = model.CompanyName is null ? null : new CompanyName(model.CompanyName);
+            var contactTitle = model.ContactTitle is null ? null : new ContactTitle(model.ContactTitle);
+            var address = model.Address is null ? null : new Address(model.Address);
+            var city = model.City is null ? null : new City(model.City);
+            var region = model.Region is null ? null : new Region(model.Region);
+            var postalCode = model.PostalCode is null ? null : new PostalCode(model.PostalCode);
+            var country = model.Country is null ? null : new Country(model.Country);
+
             customer.ChangeAccountInfo(
                 companyName,
                 contactTitle,
@@ -186,17 +192,14 @@ namespace WebGoatCore.Controllers
                 region,
                 postalCode,
                 country
-                );
+            );
 
-                
+            _customerRepository.SaveCustomer(customer);
 
-                _customerRepository.SaveCustomer(customer);
-
-                model.UpdatedSucessfully = true;
-            }
-            
+            model.UpdatedSucessfully = true;
             return View(model);
         }
+
 
         [HttpGet]
         public IActionResult ChangePassword() => View(new ChangePasswordViewModel());
@@ -234,7 +237,7 @@ namespace WebGoatCore.Controllers
         [HttpPost]
         public async Task<IActionResult> AddUserTemp(AddUserTempViewModel model)
         {
-            if(!model.IsIssuerAdmin)
+            if (!model.IsIssuerAdmin)
             {
                 return RedirectToAction("Login");
             }

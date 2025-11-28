@@ -20,6 +20,7 @@ namespace WebGoatCore.Controllers
             _blogResponseRepository = blogResponseRepository;
         }
 
+        [AllowAnonymous]
         public IActionResult Index()
         {
             var entries = _blogEntryRepository.GetTopBlogEntries();
@@ -63,7 +64,7 @@ namespace WebGoatCore.Controllers
 
             return View(responseVm);
         }
-
+    
         [HttpPost("{entryId}")]
         public IActionResult Reply(BlogResponseViewModel model)
         {
