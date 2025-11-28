@@ -17,6 +17,7 @@ namespace WebGoatCore.Controllers
             _productRepository = productRepository;
         }
 
+        [AllowAnonymous]
         public IActionResult Index()
         {
             return View(new HomeViewModel()
