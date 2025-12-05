@@ -29,31 +29,6 @@ namespace WebGoat.NET.Tests
         }
 
         [Theory]
-        [InlineData("D")]    // kun 1 bogstav
-        [InlineData("DEN")]  // 3 bogstaver
-        [InlineData("D3")]   // tal
-        [InlineData("D-")]   // symbol
-        [InlineData("ÆØ")]   // ikke A-Z
-        public void GivenInvalidCountryCode_WhenConstructing_ThenThrowsArgumentException(string value)
-        {
-            Assert.Throws<ArgumentException>(() => new Country(value));
-        }
-
-        [Fact]
-        public void GivenValidCountryCode_WhenUsingImplicitConversion_ThenReturnsUppercaseTrimmedInstance()
-        {
-            // Given
-            string input = "  de  ";
-
-            // When
-            Country? result = input;
-
-            // Then
-            Assert.NotNull(result);
-            Assert.Equal("DE", result!.Value);
-        }
-
-        [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("  ")]

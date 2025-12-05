@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace WebGoatCore.Data
 {
+    //TODO: Implement pagination for order lists
     public class OrderRepository
     {
         private readonly NorthwindContext _context;

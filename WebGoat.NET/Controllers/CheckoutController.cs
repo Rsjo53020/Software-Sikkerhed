@@ -293,8 +293,20 @@ namespace WebGoatCore.Controllers
                 ModelState.AddModelError(string.Empty, "I can't identify you. Please log in and try again.");
                 return null;
             }
+            //map from CustomerEntity to CustomerDM
+            var customerDM = new CustomerDM(new CustomerId(customer.CustomerId),
+                                            new CompanyName(customer.CompanyName),
+                                            new ContactName(customer.ContactName),
+                                            customer.ContactTitle != null ? new ContactTitle(customer.ContactTitle) : null,
+                                            customer.Address != null ? new Address(customer.Address) : null,
+                                            customer.City != null ? new City(customer.City) : null,
+                                            customer.Region != null ? new Region(customer.Region) : null,
+                                            customer.PostalCode != null ? new PostalCode(customer.PostalCode) : null,
+                                            customer.Country != null ? new Country(customer.Country) : null,
+                                            customer.Phone != null ? new PhoneNumber(customer.Phone) : null,
+                                            customer.Fax != null ? new FaxNumber(customer.Fax) : null);
 
-            return customer;
+            return customerDM;
         }
 
         private CreditCard GetCreditCardForUser()

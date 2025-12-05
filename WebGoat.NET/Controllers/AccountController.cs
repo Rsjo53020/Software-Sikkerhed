@@ -87,6 +87,13 @@ namespace WebGoatCore.Controllers
         {
             if (ModelState.IsValid)
             {
+                var existingUser = await _userManager.FindByEmailAsync(model.Email);
+                if (existingUser != null)
+                {
+                    ModelState.AddModelError(string.Empty, "Email is already registered.");
+                    return View(model);
+                }
+
                 var user = new IdentityUser(model.Username)
                 {
                     Email = model.Email
@@ -119,8 +126,17 @@ namespace WebGoatCore.Controllers
             {
                 ModelState.AddModelError(string.Empty, "We don't recognize your customer Id. Please log in and try again.");
             }
+            var customerViewModel = new ChangeAccountInfoViewModel()
+            {
+                ContactTitle = customer?.ContactTitle,
+                Address = customer?.Address,
+                City = customer?.City,
+                Region = customer?.Region,
+                PostalCode = customer?.PostalCode,
+                Country = customer?.Country,
+            };
 
-            return View(customer);
+            return View(customerViewModel);
         }
 
         [HttpGet]
@@ -142,13 +158,13 @@ namespace WebGoatCore.Controllers
 
             return View(new ChangeAccountInfoViewModel()
             {
-                CompanyName = customer.CompanyName.Value,
-                ContactTitle = customer.ContactTitle?.Value,
-                Address = customer.Address?.Value,
-                City = customer.City?.Value,
-                Region = customer.Region?.Value,
-                PostalCode = customer.PostalCode?.Value,
-                Country = customer.Country?.Value,
+                CompanyName = customer.CompanyName,
+                ContactTitle = customer.ContactTitle,
+                Address = customer.Address,
+                City = customer.City,
+                Region = customer.Region,
+                PostalCode = customer.PostalCode,
+                Country = customer.Country,
             });
         }
 
@@ -156,50 +172,30 @@ namespace WebGoatCore.Controllers
         [HttpPost]
         public IActionResult ChangeAccountInfo(ChangeAccountInfoViewModel model)
         {
-            var username = _userManager.GetUserName(User);
-            if (username is null)
-            {
-                ModelState.AddModelError(string.Empty, "We don't recognize your login. Please log in and try again.");
-                return View(model);
-            }
+            var customer = _customerRepository.GetCustomerByUsername(_userManager.GetUserName(User));
 
-            var customer = _customerRepository.GetCustomerByUsername(username);
-            if (customer is null)
+            if (customer == null)
             {
                 ModelState.AddModelError(string.Empty, "We don't recognize your customer Id. Please log in and try again.");
                 return View(model);
             }
 
-            if (!ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                return View(model);
+
+                customer.CompanyName = model.CompanyName ?? customer.CompanyName;
+                customer.ContactTitle = model.ContactTitle ?? customer.ContactTitle;
+                customer.Address = model.Address ?? customer.Address;
+                customer.City = model.City ?? customer.City;
+                customer.Region = model.Region ?? customer.Region;
+                customer.PostalCode = model.PostalCode ?? customer.PostalCode;
+                customer.Country = model.Country ?? customer.Country;
+
+                _customerRepository.SaveCustomer(customer);
+                model.UpdatedSucessfully = true;
             }
-
-            // Map fra ViewModel (strings) til domain primitives – med null-håndtering
-            var companyName = model.CompanyName is null ? null : new CompanyName(model.CompanyName);
-            var contactTitle = model.ContactTitle is null ? null : new ContactTitle(model.ContactTitle);
-            var address = model.Address is null ? null : new Address(model.Address);
-            var city = model.City is null ? null : new City(model.City);
-            var region = model.Region is null ? null : new Region(model.Region);
-            var postalCode = model.PostalCode is null ? null : new PostalCode(model.PostalCode);
-            var country = model.Country is null ? null : new Country(model.Country);
-
-            customer.ChangeAccountInfo(
-                companyName,
-                contactTitle,
-                address,
-                city,
-                region,
-                postalCode,
-                country
-            );
-
-            _customerRepository.SaveCustomer(customer);
-
-            model.UpdatedSucessfully = true;
             return View(model);
         }
-
 
         [HttpGet]
         public IActionResult ChangePassword() => View(new ChangePasswordViewModel());
@@ -225,54 +221,66 @@ namespace WebGoatCore.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult AddUserTemp()
         {
-            var model = new AddUserTempViewModel
-            {
-                IsIssuerAdmin = User.IsInRole("Admin"),
-            };
+            var model = new AddUserTempViewModel();
             return View(model);
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddUserTemp(AddUserTempViewModel model)
         {
-            if (!model.IsIssuerAdmin)
+            if (!ModelState.IsValid)
             {
-                return RedirectToAction("Login");
+                return View(model);
             }
 
-            if (ModelState.IsValid)
+            var existingUserByName = await _userManager.FindByNameAsync(model.NewUsername);
+            if (existingUserByName != null)
             {
-                var user = new IdentityUser(model.NewUsername)
-                {
-                    Email = model.NewEmail
-                };
+                ModelState.AddModelError(nameof(model.NewUsername),
+                    "A user with that username already exists.");
+                return View(model);
+            }
 
-                var result = await _userManager.CreateAsync(user, model.NewPassword);
-                if (result.Succeeded)
+            var existingUserByEmail = await _userManager.FindByEmailAsync(model.NewEmail);
+            if (existingUserByEmail != null)
+            {
+                ModelState.AddModelError(nameof(model.NewEmail), "A user with that email address already exists.");
+                return View(model);
+            }
+
+            var user = new IdentityUser(model.NewUsername)
+            {
+                Email = model.NewEmail
+            };
+
+            var result = await _userManager.CreateAsync(user, model.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                foreach (var error in result.Errors)
                 {
-                    if (model.MakeNewUserAdmin)
-                    {
-                        // TODO: role should be Admin?
-                        result = await _userManager.AddToRoleAsync(user, "admin");
-                        if (!result.Succeeded)
-                        {
-                            foreach (var error in result.Errors)
-                            {
-                                ModelState.AddModelError(string.Empty, error.Description);
-                            }
-                        }
-                    }
+                    ModelState.AddModelError(string.Empty, error.Description);
                 }
-                else
+                return View(model);
+            }
+            if (model.MakeNewUserAdmin)
+            {
+                var roleResult = await _userManager.AddToRoleAsync(user, "Admin");
+                if (!roleResult.Succeeded)
                 {
-                    foreach (var error in result.Errors)
+                    foreach (var error in roleResult.Errors)
                     {
                         ModelState.AddModelError(string.Empty, error.Description);
                     }
+                    return View(model);
                 }
             }
+
             model.CreatedUser = true;
             return View(model);
         }
