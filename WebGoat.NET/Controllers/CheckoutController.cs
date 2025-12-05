@@ -314,7 +314,7 @@ namespace WebGoatCore.Controllers
             return new CreditCard()
             {
                 Filename = Path.Combine(_resourcePath, "StoredCreditCards.xml"),
-                Username = _userManager.GetUserName(User)
+                Username = _userManager.GetUserName(User) ?? string.Empty
             };
         }
     }
