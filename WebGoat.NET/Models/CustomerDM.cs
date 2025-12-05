@@ -7,10 +7,6 @@ namespace WebGoatCore.Models
 {
     /// <summary>
     /// Customer Domain Entity – repræsenterer en kunde i systemet.
-    /// Sikkerhed:
-    ///  - Ingen setters → immutability (Secure By Design kap. 4 og 6)
-    ///  - Konsistens ved konstruktion
-    ///  - Strong typing via Domain Primitives
     /// </summary>
     public class CustomerDM
     {
