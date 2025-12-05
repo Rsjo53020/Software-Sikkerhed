@@ -39,26 +39,11 @@ namespace WebGoatCore.Data
             }
         }
 
-        public CustomerDM? GetCustomerByUsername(string username)
+        public Customer? GetCustomerByUsername(string username)
         {
             var customerEntity = _context.Customers.FirstOrDefault(c => c.ContactName == username);
 
-            // map from customerEntity to CustomerDM
-            var domainCustomer = new CustomerDM(
-       new CustomerId(customerEntity.CustomerId),
-       new CompanyName(customerEntity.CompanyName),
-       new ContactName(customerEntity.ContactName),
-       CreateIfNotNull<ContactTitle>(customerEntity.ContactTitle),
-       CreateIfNotNull<Address>(customerEntity.Address),
-       CreateIfNotNull<City>(customerEntity.City),
-       CreateIfNotNull<Region>(customerEntity.Region),
-       CreateIfNotNull<PostalCode>(customerEntity.PostalCode),
-       CreateIfNotNull<Country>(customerEntity.Country),
-       CreateIfNotNull<PhoneNumber>(customerEntity.Phone),
-       CreateIfNotNull<FaxNumber>(customerEntity.Fax)
-   );
-            return domainCustomer;
-
+            return customerEntity;
         }
 
         public Customer GetCustomerByCustomerId(string customerId)
@@ -71,28 +56,12 @@ namespace WebGoatCore.Data
             var con = _context.Customers.Any(c => c.CustomerId == customerId);
             return con;
         }
-        public void SaveCustomer(CustomerDM customer)
-        {
-            // Map CustomerDM back to Customer entity
-            var customerEntity = new Customer
-            {
-                CustomerId = customer.CustomerId.Value,
-                CompanyName = customer.CompanyName.Value,
-                ContactName = customer.ContactName.Value,
-                ContactTitle = customer.ContactTitle?.Value,
-                Address = customer.Address?.Value,
-                City = customer.City?.Value,
-                Region = customer.Region?.Value,
-                PostalCode = customer.PostalCode?.Value,
-                Country = customer.Country?.Value,
-                Phone = customer.Phone?.Value,
-                Fax = customer.Fax?.Value
-            };
 
-            _context.Update(customerEntity);
+        public void SaveCustomer(Customer customer)
+        {
+            _context.Customers.Update(customer);
             _context.SaveChanges();
         }
-
 
         /// <summary>Returns an unused CustomerId based on the company name</summary>
         /// <param name="companyName">What we want to base the CompanyId on.</param>

@@ -12,11 +12,8 @@ namespace WebGoatCore.Models
     [Owned]
     public class Country
     {
-        private const string CountryRegex = @"^[A-Z]{2}$";
-
         [Required]
-        [StringLength(2, MinimumLength = 2, ErrorMessage = "Country must be a 2-letter ISO code.")]
-        [RegularExpression(CountryRegex, ErrorMessage = "Country contains invalid characters.")]
+        [StringLength(30, MinimumLength = 2, ErrorMessage = "Country must be a 2-letter ISO code.")]
         public string Value { get; private set; } = string.Empty;
 
         protected Country() { }
@@ -30,9 +27,6 @@ namespace WebGoatCore.Models
 
             if (string.IsNullOrWhiteSpace(trimmed))
                 throw new ArgumentException("Country cannot be empty.", nameof(value));
-
-            if (!Regex.IsMatch(trimmed, CountryRegex))
-                throw new ArgumentException("Country must be a 2-letter uppercase ISO code (A-Z).", nameof(value));
 
             Value = trimmed;
         }
