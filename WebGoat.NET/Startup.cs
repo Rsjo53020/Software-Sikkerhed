@@ -75,7 +75,6 @@ namespace WebGoatCore
             services.Configure<IdentityOptions>(options =>
             {
                 // Password settings.
-                //TODO - adjust according to our needs
                 options.Password.RequireDigit = true;
                 options.Password.RequireLowercase = true;
                 options.Password.RequireNonAlphanumeric = false;
