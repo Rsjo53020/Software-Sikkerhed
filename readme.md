@@ -69,6 +69,10 @@ WebGoat.NET anvender en SQLite-database (`NORTHWND.sqlite`) til persistent lagri
 - 2) dotnet sln add ./WebGoat.NET.Tests/WebGoat.NET.Tests.csproj
 - 3) dotnet add ./WebGoat.NET.Tests/WebGoat.NET.Tests.csproj reference ./WebGoat.NET/WebGoat.NET.csproj
 
+- 1) run --rm -p 8080:8080 --name webgoatnet webgoatnetdocker rm -f webgoatnet 2>$null
+- 2) docker build --no-cache -t webgoatnet .
+- 3) docker run --rm -p 8080:8080 --name webgoatnet webgoatnet
+
 ## manuelt NuGet update
 - dotnet list package --outdated
 - dotnet outdated --upgrade

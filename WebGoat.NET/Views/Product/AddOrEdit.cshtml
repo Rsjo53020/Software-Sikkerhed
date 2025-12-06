@@ -1,96 +1,117 @@
 ﻿@model ProductAddOrEditViewModel
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = Model.AddsNew ? "Add product" : "Edit product";
 }
 
-<h1>
-    @(Model.AddsNew ? "Add a new product" : "Edit product")
-</h1>
-@Html.ValidationSummary(true)
-<br>
+<h1>@(Model.AddsNew ? "Add a new product" : "Edit product")</h1>
+
+@* viser evt. fejl samlet *@
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
 <div class="accountInfo">
-    @using (Html.BeginForm(FormMethod.Post))
-    {
-    <fieldset>
-        <legend>Product information</legend>
-        @if (!Model.AddsNew)
-        {
-            Html.HiddenFor(m => m.Product!.ProductId);
-            Html.HiddenFor(m => m.Product!.SupplierId);
+    <form asp-action="@(Model.AddsNew ? "Add" : "Edit")"
+          asp-route-id="@(Model.AddsNew ? null : Model.Product?.ProductId)"
+          method="post">
+        @Html.AntiForgeryToken()
+
+        <fieldset>
+            <legend>Product information</legend>
+
+            @if (!Model.AddsNew)
+            {
+                @* route-id håndteres via asp-route-id; vi gemmer også ProductId til modelbinding *@
+                @Html.HiddenFor(m => m.Product!.ProductId)
+                @Html.HiddenFor(m => m.Product!.SupplierId)
+
+                <p>
+                    @Html.LabelFor(m => m.Product!.ProductId)
+                    <span class="textEntry">@Model.Product?.ProductId</span>
+                </p>
+            }
+
             <p>
-                @Html.LabelFor(m => m.Product!.ProductId)
-                <span class="textEntry">@Model.Product?.ProductId</span>
+                @Html.LabelFor(m => m.Product!.ProductName)
+                @Html.TextBoxFor(m => m.Product!.ProductName, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.Product!.ProductName, null, new { @class = "text-danger" })
             </p>
-        }
-        <p>
-            @Html.LabelFor(m => m.Product!.ProductName)
-            @Html.TextBoxFor(m => m.Product!.ProductName, new { @value = Model.Product?.ProductName })
-            @Html.ValidationMessageFor(m => m.Product!.ProductName)
-        </p>
-        <p>
-            @Html.LabelFor(m => m.Product!.Category)
-            <select asp-for="Product.CategoryId">
-                @foreach (var category in Model.ProductCategories)
-                {
-                    <option value="@category.CategoryId"
-                            title="@category.Description"
-                            selected=@(Model.Product?.CategoryId == category.CategoryId ? "selected" : null)>
-                        @category.CategoryName
-                    </option>
-                }
-            </select>
-        </p>
-        <p>
-            @Html.LabelFor(m => m.Product!.QuantityPerUnit)
-            @Html.TextBoxFor(m => m.Product!.QuantityPerUnit, new { @value = Model.Product?.QuantityPerUnit })
-            @Html.ValidationMessageFor(m => m.Product!.QuantityPerUnit)
-        </p>
-        <p>
-            @Html.LabelFor(m => m.Product!.DecimalUnitPrice)
-            @Html.TextBoxFor(m => m.Product!.DecimalUnitPrice, new { @value = Model.Product?.DecimalUnitPrice })
-            @Html.ValidationMessageFor(m => m.Product!.DecimalUnitPrice)
-        </p>
-        <p>
-            @Html.LabelFor(m => m.Product!.UnitsInStock)
-            @Html.TextBoxFor(m => m.Product!.UnitsInStock, new { @value = Model.Product?.UnitsInStock })
-            @Html.ValidationMessageFor(m => m.Product!.UnitsInStock)
-        </p>
-        <p>
-            @Html.LabelFor(m => m.Product!.UnitsOnOrder)
-            @Html.TextBoxFor(m => m.Product!.UnitsOnOrder, new { @value = Model.Product?.UnitsOnOrder })
-            @Html.ValidationMessageFor(m => m.Product!.UnitsOnOrder)
-        </p>
-        <p>
-            @Html.LabelFor(m => m.Product!.ReorderLevel)
-            @Html.TextBoxFor(m => m.Product!.ReorderLevel, new { @value = Model.Product?.ReorderLevel })
-            @Html.ValidationMessageFor(m => m.Product!.ReorderLevel)
-        </p>
-        @if (Model.AddsNew)
-        {
+
             <p>
-                @Html.LabelFor(m => m.Product!.Supplier)
-                @if(Model.Suppliers != null)
-                {
-                    <select asp-for="Product.SupplierId">
-                        @foreach (var supplier in Model.Suppliers)
-                        {
-                            <option value="@supplier.SupplierId">
-                                @supplier.CompanyName
-                            </option>
-                        }
-                    </select>
-                }
-                @Html.ValidationMessageFor(m => m.Product!.Supplier)
+                @Html.LabelFor(m => m.Product!.CategoryId, "Category")
+                <select asp-for="Product.CategoryId" class="form-control">
+                    @foreach (var category in Model.ProductCategories)
+                    {
+                        <option value="@category.CategoryId"
+                                title="@category.Description"
+                                selected="@(Model.Product?.CategoryId == category.CategoryId)">
+                            @category.CategoryName
+                        </option>
+                    }
+                </select>
+                @Html.ValidationMessageFor(m => m.Product!.CategoryId, null, new { @class = "text-danger" })
             </p>
-        }
-        <p>
-            @Html.CheckBoxFor(m => m.Product!.Discontinued, new { @checked = Model.Product?.Discontinued ?? false })
-            @Html.LabelFor(m => m.Product!.Discontinued)
+
+            <p>
+                @Html.LabelFor(m => m.Product!.QuantityPerUnit)
+                @Html.TextBoxFor(m => m.Product!.QuantityPerUnit, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.Product!.QuantityPerUnit, null, new { @class = "text-danger" })
+            </p>
+
+            <p>
+                @Html.LabelFor(m => m.Product!.DecimalUnitPrice)
+                @Html.TextBoxFor(m => m.Product!.DecimalUnitPrice, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.Product!.DecimalUnitPrice, null, new { @class = "text-danger" })
+            </p>
+
+            <p>
+                @Html.LabelFor(m => m.Product!.UnitsInStock)
+                @Html.TextBoxFor(m => m.Product!.UnitsInStock, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.Product!.UnitsInStock, null, new { @class = "text-danger" })
+            </p>
+
+            <p>
+                @Html.LabelFor(m => m.Product!.UnitsOnOrder)
+                @Html.TextBoxFor(m => m.Product!.UnitsOnOrder, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.Product!.UnitsOnOrder, null, new { @class = "text-danger" })
+            </p>
+
+            <p>
+                @Html.LabelFor(m => m.Product!.ReorderLevel)
+                @Html.TextBoxFor(m => m.Product!.ReorderLevel, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.Product!.ReorderLevel, null, new { @class = "text-danger" })
+            </p>
+
+            @if (Model.AddsNew)
+            {
+                <p>
+                    @Html.LabelFor(m => m.Product!.SupplierId, "Supplier")
+                    @if (Model.Suppliers != null)
+                    {
+                        <select asp-for="Product.SupplierId" class="form-control">
+                            @foreach (var supplier in Model.Suppliers)
+                            {
+                                <option value="@supplier.SupplierId">
+                                    @supplier.CompanyName
+                                </option>
+                            }
+                        </select>
+                    }
+                    @Html.ValidationMessageFor(m => m.Product!.SupplierId, null, new { @class = "text-danger" })
+                </p>
+            }
+
+            <p>
+                @Html.CheckBoxFor(m => m.Product!.Discontinued)
+                @Html.LabelFor(m => m.Product!.Discontinued)
+            </p>
+        </fieldset>
+
+        <p class="submitButton">
+            <input type="submit" value="Save changes" class="btn btn-primary" />
         </p>
-    </fieldset>
-    <p class="submitButton">
-        <input type="submit" value="Save changes">
-    </p>
-    }
+    </form>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

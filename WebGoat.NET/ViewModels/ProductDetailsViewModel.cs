@@ -11,7 +11,7 @@ namespace WebGoatCore.ViewModels
         public string? ErrorMessage { get; set; }
         public bool CanAddToCart { get; set; }
 
-        [Range(1, int.MaxValue, ErrorMessage = "Only positive number allowed")]
+        [Range(1, int.MaxValue, ErrorMessage = "Quantity must be a positive number.")]
         [Required]
         public short Quantity { get; set; }
     }

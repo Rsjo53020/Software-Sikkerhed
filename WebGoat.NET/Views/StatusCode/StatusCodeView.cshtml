@@ -1,10 +1,13 @@
-﻿@model StatusCodeViewModel
+﻿@model WebGoatCore.ViewModels.StatusCodeViewModel
 
 <div>
     <h1>Oops! Something went wrong...</h1>
-    <br/><br/>
+    <br /><br />
     <div>
         <h2>@Model.Code</h2>
-        <h3>@Model.Message</h3>
+        @if (Model.HasMessage)
+        {
+            <h3>@Model.Message</h3>
+        }
     </div>
 </div>

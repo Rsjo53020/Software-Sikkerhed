@@ -4,11 +4,26 @@
     ViewData["Title"] = "Cart";
 }
 
-<h1>
-    Your cart
-</h1>
-<div>
-    <partial name="_CartPartial" model=@Model/>
-</div>
-<button onclick="window.location.href='/Checkout/Checkout'">Check out</button>
-<a asp-controller="Product" asp-action="Search">Keep shopping</a>
+@await Html.PartialAsync("_StatusMessage")
+
+<h1>Your cart</h1>
+
+@if (Model == null || Model.OrderDetails == null || !Model.OrderDetails.Any())
+{
+    <p>Your cart is empty.</p>
+    <a asp-controller="Product" asp-action="Search" class="btn btn-primary">Keep shopping</a>
+}
+else
+{
+    <div>
+        <partial name="_CartPartial" model="Model" />
+    </div>
+
+    <br />
+
+    <form asp-controller="Checkout" asp-action="Checkout" method="get" style="display:inline;">
+        <button type="submit" class="btn btn-success">Check out</button>
+    </form>
+
+    <a asp-controller="Product" asp-action="Search" class="btn btn-link">Keep shopping</a>
+}

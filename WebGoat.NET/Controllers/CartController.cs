@@ -1,7 +1,6 @@
 ﻿using WebGoatCore.Models;
 using WebGoatCore.Data;
 using Microsoft.AspNetCore.Mvc;
-using System;
 
 namespace WebGoatCore.Controllers
 {
@@ -17,28 +16,51 @@ namespace WebGoatCore.Controllers
 
         private Cart GetCart()
         {
-            HttpContext.Session.TryGet<Cart>("Cart", out var cart);
-            if(cart == null)
+            if (!HttpContext.Session.TryGet<Cart>("Cart", out var cart) || cart == null)
             {
                 cart = new Cart();
+                // Sørg for at en ny kurv altid bliver gemt
+                HttpContext.Session.Set("Cart", cart);
             }
+
             return cart;
         }
 
-        public IActionResult Index()
+        private void SaveCart(Cart cart)
         {
-            return View(GetCart());
+            HttpContext.Session.Set("Cart", cart);
         }
 
-        [HttpPost("{productId}")]
+        [HttpGet]
+        public IActionResult Index()
+        {
+            var cart = GetCart();
+            return View(cart);
+        }
+
+        [HttpPost("{productId:int}")]
+        [ValidateAntiForgeryToken]
         public IActionResult AddOrder(int productId, short quantity)
         {
+            if (quantity <= 0)
+            {
+                TempData["Error"] = "Quantity must be greater than zero.";
+                return RedirectToAction("Details", "Product", new { productId });
+            }
+
             var product = _productRepository.GetProductById(productId);
             
-            var cart = GetCart();
-            if(!cart.OrderDetails.ContainsKey(productId))
+            if (product == null)
             {
-                var orderDetail = new OrderDetail()
+                TempData["Error"] = $"Product {productId} was not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var cart = GetCart();
+
+            if (!cart.OrderDetails.TryGetValue(productId, out var orderDetail))
+            {
+                orderDetail = new OrderDetail
                 {
                     Discount = 0.0F,
                     ProductId = productId,
@@ -46,41 +68,41 @@ namespace WebGoatCore.Controllers
                     Product = product,
                     UnitPrice = product.UnitPrice
                 };
-                cart.OrderDetails.Add(orderDetail.ProductId, orderDetail);
+
+                cart.OrderDetails.Add(productId, orderDetail);
             }
             else
             {
-                var originalOrder = cart.OrderDetails[productId];
-                originalOrder.Quantity += quantity;
+                // Beskyt mod overflow – og udtryk tydeligt at vi lægger til
+                checked
+                {
+                    orderDetail.Quantity += quantity;
+                }
             }
 
-            HttpContext.Session.Set("Cart", cart);
+            SaveCart(cart);
 
-            return RedirectToAction("Index");
+            TempData["Message"] = "Product added to cart.";
+            return RedirectToAction(nameof(Index));
         }
 
-        [HttpGet("{productId}")]
+        [HttpPost("{productId:int}")]
+        [ValidateAntiForgeryToken]
         public IActionResult RemoveOrder(int productId)
         {
-            try
-            {
-                var cart = GetCart();
-                if (!cart.OrderDetails.ContainsKey(productId))
-                {
-                    return View("RemoveOrderError", string.Format("Product {0} was not found in your cart.", productId));
-                }
+            var cart = GetCart();
 
-                cart.OrderDetails.Remove(productId);
-                HttpContext.Session.Set("Cart", cart);
-
-                Response.Redirect("~/ViewCart.aspx");
-            }
-            catch (Exception ex)
+            if (!cart.OrderDetails.ContainsKey(productId))
             {
-                return View("RemoveOrderError", string.Format("An error has occurred: {0}", ex.Message));
+                TempData["Error"] = $"Product {productId} was not found in your cart.";
+                return RedirectToAction(nameof(Index));
             }
 
-            return RedirectToAction("Index");
+            cart.OrderDetails.Remove(productId);
+            SaveCart(cart);
+
+            TempData["Message"] = "Product removed from cart.";
+            return RedirectToAction(nameof(Index));
         }
     }
 }

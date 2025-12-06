@@ -18,8 +18,19 @@
                 <td>@order.Quantity</td>
                 <td>@order.ExtendedPrice.ToString("F")</td>
                 <td>
-                    <a asp-controller="Cart" asp-action="RemoveOrder" asp-route-productId=@order.ProductId>remove</a>
-                </td>
+                <form asp-controller="Cart"
+                      asp-action="RemoveOrder"
+                      asp-route-productId="@order.ProductId"
+                      method="post"
+                      style="display:inline;">
+                    
+                    @Html.AntiForgeryToken()
+
+                    <button type="submit" class="btn btn-sm btn-danger">
+                        Remove
+                    </button>
+                </form>
+            </td>
             </tr>
         }
         @if (Model.OrderDetails.Any())
