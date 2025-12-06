@@ -127,7 +127,7 @@ namespace WebGoatCore
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseStatusCodePagesWithRedirects($"/{StatusCodeController.NAME}?code={{0}}");
+            app.UseStatusCodePagesWithReExecute($"/{StatusCodeController.NAME}", "?code={0}");
 
             app.UseStaticFiles();
 

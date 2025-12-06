@@ -15,12 +15,18 @@ namespace WebGoatCore.Controllers
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly CustomerRepository _customerRepository;
 
-        public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, CustomerRepository customerRepository)
+        public AccountController(
+            UserManager<IdentityUser> userManager,
+            SignInManager<IdentityUser> signInManager,
+            CustomerRepository customerRepository)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _customerRepository = customerRepository;
         }
+
+        // Helper til at hente nuværende brugernavn
+        private string? CurrentUserName => _userManager.GetUserName(User);
 
         [HttpGet]
         [AllowAnonymous]
@@ -34,6 +40,7 @@ namespace WebGoatCore.Controllers
 
         [HttpPost]
         [AllowAnonymous]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (!ModelState.IsValid)
@@ -41,35 +48,40 @@ namespace WebGoatCore.Controllers
                 return View(model);
             }
 
-            var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, lockoutOnFailure: true);
-
-            if (result.Succeeded)
-            {
-                if (model.ReturnUrl != null)
-                {
-                    return Redirect(model.ReturnUrl);
-                }
-                else
-                {
-                    return RedirectToAction("Index", "Home");
-                }
-            }
+            var result = await _signInManager.PasswordSignInAsync(
+                model.Username,
+                model.Password,
+                model.RememberMe,
+                lockoutOnFailure: true);
 
             if (result.IsLockedOut)
             {
                 return RedirectToPage("./Lockout");
             }
-            else
+
+            if (!result.Succeeded)
             {
                 ModelState.AddModelError(string.Empty, "Invalid login attempt.");
                 return View(model);
             }
+
+            // Redirect – brug ReturnUrl hvis den er lokal, ellers til Home
+            if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+            {
+                return Redirect(model.ReturnUrl);
+            }
+
+            return RedirectToAction("Index", "Home");
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
+
             HttpContext.Session.Set("Cart", new Cart());
+
             return RedirectToAction("Index", "Home");
         }
 
@@ -83,67 +95,56 @@ namespace WebGoatCore.Controllers
 
         [HttpPost]
         [AllowAnonymous]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var existingUser = await _userManager.FindByEmailAsync(model.Email);
-                if (existingUser != null)
-                {
-                    ModelState.AddModelError(string.Empty, "Email is already registered.");
-                    return View(model);
-                }
+                return View(model);
+            }
 
-                var user = new IdentityUser(model.Username)
-                {
-                    Email = model.Email
-                };
+            var existingUser = await _userManager.FindByEmailAsync(model.Email);
+            if (existingUser != null)
+            {
+                ModelState.AddModelError(nameof(model.Email), "Email is already registered.");
+                return View(model);
+            }
 
-                var result = await _userManager.CreateAsync(user, model.Password);
-                if (result.Succeeded)
-                {
-                    _customerRepository.CreateCustomer(model.CompanyName, model.Username, model.Address, model.City, model.Region, model.PostalCode, model.Country);
+            var user = new IdentityUser(model.Username)
+            {
+                Email = model.Email
+            };
 
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                    return RedirectToAction("Index", "Home");
-                }
-
+            var result = await _userManager.CreateAsync(user, model.Password);
+            if (!result.Succeeded)
+            {
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
+
+                return View(model);
             }
 
-            return View(model);
+            _customerRepository.CreateCustomer(
+                model.CompanyName,
+                model.Username,
+                model.Address,
+                model.City,
+                model.Region,
+                model.PostalCode,
+                model.Country);
+
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            return RedirectToAction("Index", "Home");
         }
 
         public IActionResult MyAccount() => View();
 
         public IActionResult ViewAccountInfo()
         {
-            var customer = _customerRepository.GetCustomerByUsername(_userManager.GetUserName(User));
-            if (customer == null)
-            {
-                ModelState.AddModelError(string.Empty, "We don't recognize your customer Id. Please log in and try again.");
-            }
-            var customerViewModel = new ChangeAccountInfoViewModel()
-            {
-                ContactTitle = customer?.ContactTitle,
-                Address = customer?.Address,
-                City = customer?.City,
-                Region = customer?.Region,
-                PostalCode = customer?.PostalCode,
-                Country = customer?.Country,
-            };
-
-            return View(customerViewModel);
-        }
-
-        [HttpGet]
-        public IActionResult ChangeAccountInfo()
-        {
-            var username = _userManager.GetUserName(User);
-            if (username is null)
+            var username = CurrentUserName;
+            if (string.IsNullOrEmpty(username))
             {
                 ModelState.AddModelError(string.Empty, "We don't recognize your login. Please log in and try again.");
                 return View(new ChangeAccountInfoViewModel());
@@ -156,7 +157,7 @@ namespace WebGoatCore.Controllers
                 return View(new ChangeAccountInfoViewModel());
             }
 
-            return View(new ChangeAccountInfoViewModel()
+            var customerViewModel = new ChangeAccountInfoViewModel
             {
                 CompanyName = customer.CompanyName,
                 ContactTitle = customer.ContactTitle,
@@ -164,36 +165,76 @@ namespace WebGoatCore.Controllers
                 City = customer.City,
                 Region = customer.Region,
                 PostalCode = customer.PostalCode,
-                Country = customer.Country,
-            });
+                Country = customer.Country
+            };
+
+            return View(customerViewModel);
         }
 
-
-        [HttpPost]
-        public IActionResult ChangeAccountInfo(ChangeAccountInfoViewModel model)
+        [HttpGet]
+        public IActionResult ChangeAccountInfo()
         {
-            var customer = _customerRepository.GetCustomerByUsername(_userManager.GetUserName(User));
+            var username = CurrentUserName;
+            if (string.IsNullOrEmpty(username))
+            {
+                ModelState.AddModelError(string.Empty, "We don't recognize your login. Please log in and try again.");
+                return View(new ChangeAccountInfoViewModel());
+            }
 
+            var customer = _customerRepository.GetCustomerByUsername(username);
             if (customer == null)
             {
                 ModelState.AddModelError(string.Empty, "We don't recognize your customer Id. Please log in and try again.");
+                return View(new ChangeAccountInfoViewModel());
+            }
+
+            return View(new ChangeAccountInfoViewModel
+            {
+                CompanyName = customer.CompanyName,
+                ContactTitle = customer.ContactTitle,
+                Address = customer.Address,
+                City = customer.City,
+                Region = customer.Region,
+                PostalCode = customer.PostalCode,
+                Country = customer.Country
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ChangeAccountInfo(ChangeAccountInfoViewModel model)
+        {
+            var username = CurrentUserName;
+            if (string.IsNullOrEmpty(username))
+            {
+                ModelState.AddModelError(string.Empty, "We don't recognize your login. Please log in and try again.");
                 return View(model);
             }
 
-            if (ModelState.IsValid)
+            var customer = _customerRepository.GetCustomerByUsername(username);
+            if (customer == null)
             {
-
-                customer.CompanyName = model.CompanyName ?? customer.CompanyName;
-                customer.ContactTitle = model.ContactTitle ?? customer.ContactTitle;
-                customer.Address = model.Address ?? customer.Address;
-                customer.City = model.City ?? customer.City;
-                customer.Region = model.Region ?? customer.Region;
-                customer.PostalCode = model.PostalCode ?? customer.PostalCode;
-                customer.Country = model.Country ?? customer.Country;
-
-                _customerRepository.SaveCustomer(customer);
-                model.UpdatedSucessfully = true;
+                ModelState.AddModelError(string.Empty, "We don't recognize your customer Id. Please log in and try igen.");
+                return View(model);
             }
+
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            customer.CompanyName = model.CompanyName ?? customer.CompanyName;
+            customer.ContactTitle = model.ContactTitle ?? customer.ContactTitle;
+            customer.Address = model.Address ?? customer.Address;
+            customer.City = model.City ?? customer.City;
+            customer.Region = model.Region ?? customer.Region;
+            customer.PostalCode = model.PostalCode ?? customer.PostalCode;
+            customer.Country = model.Country ?? customer.Country;
+
+            _customerRepository.SaveCustomer(customer);
+            model.UpdatedSucessfully = true;
+
+            // Evt. PRG pattern: RedirectToAction("ChangeAccountInfo") i stedet for at vise samme view
             return View(model);
         }
 
@@ -201,20 +242,30 @@ namespace WebGoatCore.Controllers
         public IActionResult ChangePassword() => View(new ChangePasswordViewModel());
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var result = await _userManager.ChangePasswordAsync(await _userManager.GetUserAsync(User), model.OldPassword, model.NewPassword);
-                if (result.Succeeded)
-                {
-                    return View("ChangePasswordSuccess");
-                }
+                return View(model);
+            }
 
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                ModelState.AddModelError(string.Empty, "We don't recognize your login. Please log in and try again.");
+                return View(model);
+            }
+
+            var result = await _userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
+            if (result.Succeeded)
+            {
+                return View("ChangePasswordSuccess");
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
             }
 
             return View(model);
@@ -224,8 +275,7 @@ namespace WebGoatCore.Controllers
         [Authorize(Roles = "Admin")]
         public IActionResult AddUserTemp()
         {
-            var model = new AddUserTempViewModel();
-            return View(model);
+            return View(new AddUserTempViewModel());
         }
 
         [HttpPost]
@@ -241,8 +291,7 @@ namespace WebGoatCore.Controllers
             var existingUserByName = await _userManager.FindByNameAsync(model.NewUsername);
             if (existingUserByName != null)
             {
-                ModelState.AddModelError(nameof(model.NewUsername),
-                    "A user with that username already exists.");
+                ModelState.AddModelError(nameof(model.NewUsername), "A user with that username already exists.");
                 return View(model);
             }
 
@@ -266,8 +315,10 @@ namespace WebGoatCore.Controllers
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
+
                 return View(model);
             }
+
             if (model.MakeNewUserAdmin)
             {
                 var roleResult = await _userManager.AddToRoleAsync(user, "Admin");

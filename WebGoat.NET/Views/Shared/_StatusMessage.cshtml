@@ -3,16 +3,23 @@
     var message = TempData["Message"] as string;
 }
 
-@if (!string.IsNullOrEmpty(error))
+@if (!string.IsNullOrEmpty(error) || !string.IsNullOrEmpty(message))
 {
-    <div class="alert alert-danger">
-        @error
-    </div>
-}
+    <div class="status-messages">
 
-@if (!string.IsNullOrEmpty(message))
-{
-    <div class="alert alert-success">
-        @message
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-danger">
+                @error
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="alert alert-success">
+                @message
+            </div>
+        }
+
     </div>
 }

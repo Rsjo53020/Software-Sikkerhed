@@ -4,20 +4,24 @@
     ViewData["Title"] = "Search";
 }
 
-<form method="post">
+<form asp-controller="Product"
+      asp-action="Search"
+      method="get">
     <h1>WebGoat.NetCore - Search for products</h1>
     Enter all or part of the description:
-    <input asp-for="NameFilter" type="text" class="textEntry" value=@Model.NameFilter/>
-    <input type="submit" value="Search">
-    <br>
+    <input asp-for="NameFilter" type="text" class="textEntry" />
+    <input type="submit" value="Search" />
+    <br />
     Category:
     <select asp-for="SelectedCategoryId" onchange="this.form.submit()">
-        <option selected=@(Model.SelectedCategoryId == null ? "selected" : null) value="0">All categories</option>
+        <option value="" selected="@(Model.SelectedCategoryId == null)">
+            All categories
+        </option>
         @foreach (var category in Model.ProductCategories)
         {
-            <option value="@category.CategoryId" 
+            <option value="@category.CategoryId"
                     title="@category.Description"
-                    selected=@(Model.SelectedCategoryId == category.CategoryId ? "selected" : null)>
+                    selected="@(Model.SelectedCategoryId == category.CategoryId)">
                 @category.CategoryName
             </option>
         }
