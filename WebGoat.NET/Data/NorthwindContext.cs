@@ -12,43 +12,48 @@ namespace WebGoatCore.Data
 {
     public class NorthwindContext : IdentityDbContext<IdentityUser>
     {
+        public static string ConnString { get; private set; } = string.Empty;
+
         public static void Initialize(IConfiguration configuration, IHostEnvironment env)
         {
             var execDirectory = configuration.GetValue(Constants.WEBGOAT_ROOT, env.ContentRootPath);
-            var builder = new SqliteConnectionStringBuilder();
-            builder.DataSource = Path.Combine(execDirectory, "NORTHWND.sqlite");
+            
+            var builder = new SqliteConnectionStringBuilder
+            {
+                DataSource = Path.Combine(execDirectory, "NORTHWND.sqlite")
+            };
+
             ConnString = builder.ConnectionString;
             if (string.IsNullOrEmpty(ConnString))
             {
-                throw new WebGoatCore.Exceptions.WebGoatStartupException("Cannot compute connection string to connect database!");
+                throw new WebGoatCore.Exceptions.WebGoatStartupException(
+                    "Cannot compute connection string to connect database!");
             }
         }
 
-        public static string? ConnString;
+        private static readonly ILoggerFactory MyLoggerFactory =
+            LoggerFactory.Create(builder =>
+            {
+                builder.AddDebug();
 
-        public static readonly LoggerFactory _myLoggerFactory =
-            new LoggerFactory(new[] {
-                new Microsoft.Extensions.Logging.Debug.DebugLoggerProvider()
-        });
+            });
 
-#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
         public NorthwindContext(DbContextOptions<NorthwindContext> options)
-#pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
             : base(options)
         {
         }
 
-        public DbSet<BlogEntry> BlogEntries { get; set; }
-        public DbSet<BlogResponse> BlogResponses { get; set; }
-        public DbSet<Category> Categories { get; set; }
-        public DbSet<Customer> Customers { get; set; }
-        public DbSet<Order> Orders { get; set; }
-        public DbSet<OrderDetail> OrderDetails { get; set; }
-        public DbSet<OrderPayment> OrderPayments { get; set; }
-        public DbSet<Product> Products { get; set; }
-        public DbSet<Shipper> Shippers { get; set; }
-        public DbSet<Shipment> Shipments { get; set; }
-        public DbSet<Supplier> Suppliers { get; set; }
+        public DbSet<BlogEntry> BlogEntries { get; set; } = null!;
+        public DbSet<BlogResponse> BlogResponses { get; set; } = null!;
+        public DbSet<Category> Categories { get; set; } = null!;
+        public DbSet<Customer> Customers { get; set; } = null!;
+        public DbSet<Order> Orders { get; set; } = null!;
+        public DbSet<OrderDetail> OrderDetails { get; set; } = null!;
+        public DbSet<OrderPayment> OrderPayments { get; set; } = null!;
+        public DbSet<Product> Products { get; set; } = null!;
+        public DbSet<Shipper> Shippers { get; set; } = null!;
+        public DbSet<Shipment> Shipments { get; set; } = null!;
+        public DbSet<Supplier> Suppliers { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -58,7 +63,7 @@ namespace WebGoatCore.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseLoggerFactory(_myLoggerFactory);
+            optionsBuilder.UseLoggerFactory(MyLoggerFactory);
             optionsBuilder.EnableSensitiveDataLogging();
         }
     }

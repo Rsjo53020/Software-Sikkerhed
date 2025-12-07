@@ -1,6 +1,8 @@
 ﻿using WebGoatCore.Models;
 using System;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace WebGoatCore.Data
 {
@@ -12,11 +14,12 @@ namespace WebGoatCore.Data
         {
             _context = context;
         }
-        public string CreateCustomer(string companyName, string contactName, string? address = null, string? city = null, string? region = null, string? postalCode = null, string? country = null)
+
+        public async Task<string> CreateCustomerAsync(string companyName, string contactName, string? address = null, string? city = null, string? region = null, string? postalCode = null, string? country = null)
         {
             try
             {
-                var customerId = GenerateCustomerId(companyName);
+                var customerId = await GenerateCustomerIdAsync(companyName);
                 var customer = new Customer
                 {
                     CustomerId = customerId,
@@ -29,59 +32,91 @@ namespace WebGoatCore.Data
                     Country = country
                 };
 
-                _context.Customers.Add(customer);
-                _context.SaveChanges();
+                await _context.Customers.AddAsync(customer);
+                await _context.SaveChangesAsync();
+
                 return customerId;
+            }
+            catch (DbUpdateException ex)
+            {
+                throw new InvalidOperationException("Could not create customer due to a database error.", ex);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Could not create customer", ex);
+                throw new InvalidOperationException("Could not create customer.", ex);
             }
         }
 
-        public Customer? GetCustomerByUsername(string username)
+        public async Task<Customer?> GetCustomerByUsernameAsync(string username)
         {
-            var customerEntity = _context.Customers.FirstOrDefault(c => c.ContactName == username);
+            return await _context.Customers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.ContactName == username);
 
-            return customerEntity;
         }
 
-        public Customer GetCustomerByCustomerId(string customerId)
+        public async Task<Customer?> GetCustomerByCustomerIdAsync(string customerId)
         {
-            return _context.Customers.Single(c => c.CustomerId == customerId);
+            return await _context.Customers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.CustomerId == customerId);
         }
 
-        public bool CustomerIdExists(string customerId)
+        public async Task<bool> CustomerIdExistsAsync(string customerId)
         {
-            var con = _context.Customers.Any(c => c.CustomerId == customerId);
-            return con;
+            return await _context.Customers
+                .AsNoTracking()
+                .AnyAsync(c => c.CustomerId == customerId);
         }
 
-        public void SaveCustomer(Customer customer)
+        public async Task SaveCustomerAsync(CustomerDM customerDM)
         {
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.CustomerId == customerDM.CustomerId.ToString());
+
+            if (customer == null)
+            {
+                throw new InvalidOperationException("Customer not found.");
+            }
+
+            customer.CompanyName = customerDM.CompanyName.ToString();
+            customer.ContactName = customerDM.ContactName.ToString();
+            customer.ContactTitle = customerDM.ContactTitle?.ToString();
+            customer.Address = customerDM.Address?.ToString();
+            customer.City = customerDM.City?.ToString();
+            customer.Region = customerDM.Region?.ToString();
+            customer.PostalCode = customerDM.PostalCode?.ToString();
+            customer.Country = customerDM.Country?.ToString();
+            customer.Phone = customerDM.Phone?.ToString();
+            customer.Fax = customerDM.Fax?.ToString();
+
             _context.Customers.Update(customer);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
-
         /// <summary>Returns an unused CustomerId based on the company name</summary>
         /// <param name="companyName">What we want to base the CompanyId on.</param>
         /// <returns>An unused CustomerId.</returns>
-        private string GenerateCustomerId(string companyName)
+        private async Task<string> GenerateCustomerIdAsync(string companyName)
         {
             var characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            var random = new Random();
 
-            // Fjern mellemrum og begræns længden
-            var id = companyName.Replace(" ", "");
-            id = id.Length >= 5 ? id.Substring(0, 5) : id.PadRight(5, 'X');  // fyld ud så den altid er 5 tegn
+            var baseId = companyName
+                .Replace(" ", string.Empty)
+                .ToUpperInvariant();
+
+            baseId = baseId.Length >= 5
+                ? baseId.Substring(0, 5)
+                : baseId.PadRight(5, 'X');
+
+            var id = baseId;
 
             // Maks forsøg før vi giver op
             for (int i = 0; i < 50; i++)
             {
-                if (!CustomerIdExists(id))
-                    return id;
+                if (! await CustomerIdExistsAsync(baseId))
+                    return baseId;
 
-                id = id.Substring(0, 4) + characters[random.Next(characters.Length)];
+                id = id.Substring(0, 4) + characters[Random.Shared.Next(characters.Length)];
             }
 
             throw new InvalidOperationException("Could not generate unique CustomerID.");

@@ -45,11 +45,11 @@ namespace WebGoatCore
         {
             string? entryDir = null;
             string? entryLocation = Assembly.GetEntryAssembly()?.Location;
-            if(!string.IsNullOrEmpty(entryLocation))
+            if (!string.IsNullOrEmpty(entryLocation))
             {
                 entryDir = Path.GetDirectoryName(entryLocation);
             }
-            if(!string.IsNullOrEmpty(entryDir))
+            if (!string.IsNullOrEmpty(entryDir))
             {
                 return entryDir;
             }

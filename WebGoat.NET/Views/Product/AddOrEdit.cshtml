@@ -20,7 +20,6 @@
 
             @if (!Model.AddsNew)
             {
-                @* route-id håndteres via asp-route-id; vi gemmer også ProductId til modelbinding *@
                 @Html.HiddenFor(m => m.Product!.ProductId)
                 @Html.HiddenFor(m => m.Product!.SupplierId)
 

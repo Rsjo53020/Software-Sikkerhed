@@ -10,6 +10,8 @@ using System.Linq;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using WebGoatCore.Exceptions;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace WebGoatCore.Controllers
 {
@@ -32,17 +34,17 @@ namespace WebGoatCore.Controllers
         }
 
         [HttpGet]
-        public IActionResult Checkout()
+        public async Task<IActionResult> Checkout()
         {
-            if(_model == null)
+            if (_model == null)
             {
-                InitializeModel();
+                await InitializeModelAsync();
             }
 
             return View(_model);
         }
 
-        private void InitializeModel()
+        private async Task InitializeModelAsync()
         {
             _model = new CheckoutViewModel();
 
@@ -52,14 +54,14 @@ namespace WebGoatCore.Controllers
             .Select(i => DateTime.Now.Year + i)
             .ToList();
 
-            _model.ShippingOptions = _shipperRepository.GetShippingOptions(_model.Cart?.SubTotal ?? 0);
+            _model.ShippingOptions = await _shipperRepository.GetShippingOptionsAsync(Convert.ToDecimal(_model.Cart?.SubTotal ?? 0));
 
-            if (_model.Cart == null || _model.Cart.OrderDetails.Count == 0)
+            if (_model.Cart == null || _model.Cart.Items.Count == 0)
             {
                 ModelState.AddModelError(string.Empty, "You have no items in your cart.");
             }
 
-            var customerDM = GetCustomerOrAddError();
+            var customerDM = await GetCustomerOrAddErrorAsync();
             if (customerDM != null)
             {
                 //map from CustomerDM to CustomerEntity
@@ -81,9 +83,9 @@ namespace WebGoatCore.Controllers
 
                 creditCard.GetCardForUser();
 
-                _model.CreditCard      = creditCard.Number;
+                _model.CreditCard = creditCard.Number;
                 _model.ExpirationMonth = creditCard.Expiry.Month;
-                _model.ExpirationYear  = creditCard.Expiry.Year;
+                _model.ExpirationYear = creditCard.Expiry.Year;
                 _model.ShipTarget = customerEntity.CompanyName;
                 _model.Address = customerEntity.Address ?? string.Empty;
                 _model.City = customerEntity.City ?? string.Empty;
@@ -94,12 +96,12 @@ namespace WebGoatCore.Controllers
         }
 
         [HttpPost]
-        public IActionResult Checkout(CheckoutViewModel model)
+        public async Task<IActionResult> Checkout(CheckoutViewModel model)
         {
             model.Cart = HttpContext.Session.Get<Cart>("Cart")!;
 
-            var customerDM = GetCustomerOrAddError();
-            if(customerDM == null)
+            var customerDM = await GetCustomerOrAddErrorAsync();
+            if (customerDM == null)
             {
                 return View(model);
             }
@@ -141,20 +143,20 @@ namespace WebGoatCore.Controllers
             }
 
             //map from CustomerDM to CustomerEntity
-                var customerEntity = new Customer()
-                {
-                    CustomerId = customerDM.CustomerId.Value,
-                    CompanyName = customerDM.CompanyName.Value,
-                    ContactName = customerDM.ContactName.Value,
-                    ContactTitle = customerDM.ContactTitle?.Value,
-                    Address = customerDM.Address?.Value,
-                    City = customerDM.City?.Value,
-                    Region = customerDM.Region?.Value,
-                    PostalCode = customerDM.PostalCode?.Value,
-                    Country = customerDM.Country?.Value,
-                    Phone = customerDM.Phone?.Value,
-                    Fax = customerDM.Fax?.Value
-                };
+            var customerEntity = new Customer()
+            {
+                CustomerId = customerDM.CustomerId.Value,
+                CompanyName = customerDM.CompanyName.Value,
+                ContactName = customerDM.ContactName.Value,
+                ContactTitle = customerDM.ContactTitle?.Value,
+                Address = customerDM.Address?.Value,
+                City = customerDM.City?.Value,
+                Region = customerDM.Region?.Value,
+                PostalCode = customerDM.PostalCode?.Value,
+                Country = customerDM.Country?.Value,
+                Phone = customerDM.Phone?.Value,
+                Fax = customerDM.Fax?.Value
+            };
 
             var order = new Order
             {
@@ -165,11 +167,11 @@ namespace WebGoatCore.Controllers
                 ShipRegion = model.Region,
                 ShipPostalCode = model.PostalCode,
                 ShipCountry = model.Country,
-                OrderDetails = model.Cart.OrderDetails.Values.ToList(),
+                OrderDetails = MapCartToOrderDetails(model.Cart),
                 CustomerId = customerEntity.CustomerId,
                 OrderDate = DateTime.Now,
                 RequiredDate = DateTime.Now.AddDays(7),
-                Freight = Math.Round(_shipperRepository.GetShipperByShipperId(model.ShippingMethod).GetShippingCost(model.Cart.SubTotal), 2),
+                Freight = Math.Round((await _shipperRepository.GetShipperByShipperIdAsync(model.ShippingMethod)).GetShippingCost(Convert.ToDecimal(model.Cart.SubTotal)), 2),
                 EmployeeId = 1,
             };
 
@@ -179,21 +181,21 @@ namespace WebGoatCore.Controllers
             {
                 ShipmentDate = DateTime.Today.AddDays(1),
                 ShipperId = order.ShipVia,
-                TrackingNumber = _shipperRepository.GetNextTrackingNumber(_shipperRepository.GetShipperByShipperId(order.ShipVia)),
+                TrackingNumber = _shipperRepository.GetNextTrackingNumber(await _shipperRepository.GetShipperByShipperIdAsync(order.ShipVia)),
             };
 
             //Create the order itself.
-            var orderId = _orderRepository.CreateOrder(order);
+            var orderId = await _orderRepository.CreateOrderAsync(order);
 
             //Create the payment record.
-            _orderRepository.CreateOrderPayment(orderId, order.Total, creditCard.Number, creditCard.Expiry, approvalCode);
+            await _orderRepository.CreateOrderPaymentAsync(orderId, order.Total, creditCard.Number, creditCard.Expiry, approvalCode);
 
             HttpContext.Session.SetInt32("OrderId", orderId);
             HttpContext.Session.Remove("Cart");
             return RedirectToAction("Receipt");
         }
 
-        public IActionResult Receipt(int? id)
+        public async Task<IActionResult> Receipt(int? id)
         {
             var orderId = HttpContext.Session.GetInt32("OrderId");
             if (id != null)
@@ -210,7 +212,7 @@ namespace WebGoatCore.Controllers
             Order order;
             try
             {
-                order = _orderRepository.GetOrderById(orderId.Value);
+                order = await _orderRepository.GetOrderByIdAsync(orderId.Value);
             }
             catch (InvalidOperationException)
             {
@@ -221,33 +223,33 @@ namespace WebGoatCore.Controllers
             return View(order);
         }
 
-        public IActionResult Receipts()
+        public async Task<IActionResult> Receipts()
         {
-            var customerDM = GetCustomerOrAddError();
-            if(customerDM == null)
+            var customerDM = await GetCustomerOrAddErrorAsync();
+            if (customerDM == null)
             {
                 return View();
             }
             //map from CustomerDM to Customer
-                var customerEntity = new Customer()
-                {
-                    CustomerId = customerDM.CustomerId.Value,
-                    CompanyName = customerDM.CompanyName.Value,
-                    ContactName = customerDM.ContactName.Value,
-                    ContactTitle = customerDM.ContactTitle?.Value,
-                    Address = customerDM.Address?.Value,
-                    City = customerDM.City?.Value,
-                    Region = customerDM.Region?.Value,
-                    PostalCode = customerDM.PostalCode?.Value,
-                    Country = customerDM.Country?.Value,
-                    Phone = customerDM.Phone?.Value,
-                    Fax = customerDM.Fax?.Value
-                };
+            var customerEntity = new Customer()
+            {
+                CustomerId = customerDM.CustomerId.Value,
+                CompanyName = customerDM.CompanyName.Value,
+                ContactName = customerDM.ContactName.Value,
+                ContactTitle = customerDM.ContactTitle?.Value,
+                Address = customerDM.Address?.Value,
+                City = customerDM.City?.Value,
+                Region = customerDM.Region?.Value,
+                PostalCode = customerDM.PostalCode?.Value,
+                Country = customerDM.Country?.Value,
+                Phone = customerDM.Phone?.Value,
+                Fax = customerDM.Fax?.Value
+            };
 
-            return View(_orderRepository.GetAllOrdersByCustomerId(customerEntity.CustomerId));
+            return View(await _orderRepository.GetAllOrdersByCustomerIdAsync(customerEntity.CustomerId));
         }
 
-        public IActionResult PackageTracking(string? carrier, string? trackingNumber)
+        public async Task<IActionResult> PackageTracking(string? carrier, string? trackingNumber)
         {
             var model = new PackageTrackingViewModel()
             {
@@ -255,7 +257,7 @@ namespace WebGoatCore.Controllers
                 SelectedTrackingNumber = trackingNumber,
             };
 
-            var customerDM = GetCustomerOrAddError();
+            var customerDM = await GetCustomerOrAddErrorAsync();
             if (customerDM != null)
             {
                 //map from CustomerDM to Customer
@@ -273,9 +275,9 @@ namespace WebGoatCore.Controllers
                     Phone = customerDM.Phone?.Value,
                     Fax = customerDM.Fax?.Value
                 };
-                model.Orders = _orderRepository.GetAllOrdersByCustomerId(customerEntity.CustomerId);
+                model.Orders = await _orderRepository.GetAllOrdersByCustomerIdAsync(customerEntity.CustomerId);
             }
-            
+
             return View(model);
         }
 
@@ -284,10 +286,19 @@ namespace WebGoatCore.Controllers
             return Redirect(Order.GetPackageTrackingUrl(carrier, trackingNumber));
         }
 
-        private CustomerDM? GetCustomerOrAddError()
+        private async Task<CustomerDM?> GetCustomerOrAddErrorAsync()
         {
-            var username = _userManager.GetUserName(User);
-            var customer = _customerRepository.GetCustomerByUsername(username);
+
+            var user = await _userManager.GetUserAsync(User);
+            var username = user?.UserName;
+
+            if (string.IsNullOrEmpty(username))
+            {
+                ModelState.AddModelError(string.Empty, "I can't identify you. Please log in and try again.");
+                return null;
+            }
+
+            var customer = await _customerRepository.GetCustomerByUsernameAsync(username);
             if (customer == null)
             {
                 ModelState.AddModelError(string.Empty, "I can't identify you. Please log in and try again.");
@@ -316,6 +327,24 @@ namespace WebGoatCore.Controllers
                 Filename = Path.Combine(_resourcePath, "StoredCreditCards.xml"),
                 Username = _userManager.GetUserName(User) ?? string.Empty
             };
+        }
+
+        private List<OrderDetail> MapCartToOrderDetails(Cart cart)
+        {
+            var list = new List<OrderDetail>();
+
+            foreach (var item in cart.Items.Values)
+            {
+                list.Add(new OrderDetail
+                {
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice,
+                    Discount = 0f
+                });
+            }
+
+            return list;
         }
     }
 }

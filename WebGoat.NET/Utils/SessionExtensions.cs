@@ -10,11 +10,17 @@ namespace WebGoatCore
     {
         public static void Set<T>(this ISession session, string key, T value)
         {
-            var s = JsonConvert.SerializeObject(value);
-            session.SetString(key, s);
+            var settings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                NullValueHandling = NullValueHandling.Ignore
+            };
+
+            var json = JsonConvert.SerializeObject(value, settings);
+            session.SetString(key, json);
         }
 
-        [return:MaybeNull]
+        [return: MaybeNull]
         public static T Get<T>(this ISession session, string key)
         {
             if (session.TryGet<T>(key, out var value))

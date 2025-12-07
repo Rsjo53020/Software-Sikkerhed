@@ -1,6 +1,8 @@
 ﻿using WebGoatCore.Models;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace WebGoatCore.Data
 {
@@ -13,9 +15,12 @@ namespace WebGoatCore.Data
             _context = context;
         }
 
-        public List<Supplier> GetAllSuppliers()
+        public async Task<List<Supplier>> GetAllSuppliersAsync()
         {
-            return _context.Suppliers.OrderBy(s => s.CompanyName).ToList();
+            return await _context.Suppliers
+                .AsNoTracking()
+                .OrderBy(s => s.CompanyName)
+                .ToListAsync();
         }
     }
 }

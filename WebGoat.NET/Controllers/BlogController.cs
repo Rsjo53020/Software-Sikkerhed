@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using WebGoatCore.ViewModels;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace WebGoatCore.Controllers
 {
@@ -24,9 +25,9 @@ namespace WebGoatCore.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var entries = _blogEntryRepository.GetTopBlogEntries();
+            var entries = await _blogEntryRepository.GetTopBlogEntriesAsync();
 
             var viewModels = entries.Select(e => new BlogEntryViewModel
             {
@@ -42,9 +43,9 @@ namespace WebGoatCore.Controllers
 
         [HttpGet("{entryId:int}")]
         [Authorize]
-        public IActionResult Reply(int entryId)
+        public async Task<IActionResult> Reply(int entryId)
         {
-            var responseVm = BuildResponseViewModel(entryId);
+            var responseVm = await BuildResponseViewModelAsync(entryId);
             if (responseVm == null)
             {
                 TempData["Error"] = "The blog entry you are trying to respond to does not exist.";
@@ -57,7 +58,7 @@ namespace WebGoatCore.Controllers
         [HttpPost("{entryId:int}")]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public IActionResult Reply(int entryId, BlogResponseViewModel model)
+        public async Task<IActionResult> Reply(int entryId, BlogResponseViewModel model)
         {
             // Sørg for at model har det rigtige entryId
             model.BlogEntryId = entryId;
@@ -65,7 +66,7 @@ namespace WebGoatCore.Controllers
             var userName = User?.Identity?.Name ?? "Anonymous";
 
             // RATE LIMIT: max 5 responses per hour per user
-            var responsesLastHour = _blogResponseRepository.CountResponsesByAuthorLastHour(userName);
+            var responsesLastHour = await _blogResponseRepository.CountResponsesByAuthorLastHourAsync(userName);
             if (responsesLastHour >= 5)
             {
                 TempData["Error"] = "You have already posted 5 responses within the last hour. Please try again later.";
@@ -77,7 +78,7 @@ namespace WebGoatCore.Controllers
                 TempData["Error"] = "Your response does not meet the requirements (length or illegal characters).";
 
                 // Genopbyg viewmodel med blog entry, så valideringsfejl kan vises på Reply-siden
-                var vm = BuildResponseViewModel(entryId);
+                var vm = await BuildResponseViewModelAsync(entryId);
                 if (vm == null)
                 {
                     TempData["Error"] = "The blog entry you are trying to respond to does not exist.";
@@ -96,7 +97,7 @@ namespace WebGoatCore.Controllers
                 ResponseDate = DateTime.UtcNow
             };
 
-            if (!_blogResponseRepository.CreateBlogResponse(response))
+            if (!await _blogResponseRepository.CreateBlogResponseAsync(response))
             {
                 TempData["Error"] = "An error occurred while saving your response. Please try again later.";
                 return RedirectToAction(nameof(Index));
@@ -113,7 +114,7 @@ namespace WebGoatCore.Controllers
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(string title, string contents)
+        public async Task<IActionResult> Create(string title, string contents)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -131,16 +132,24 @@ namespace WebGoatCore.Controllers
             }
 
             var author = User?.Identity?.Name ?? "Admin";
-            var blogEntry = _blogEntryRepository.CreateBlogEntry(title, contents, author);
+
+            var entry = new BlogEntry
+            {
+                Title = title,
+                Contents = contents,
+                Author = author,
+                PostedDate = DateTime.Now,
+            };
+            var blogEntry =  await _blogEntryRepository.CreateBlogEntryAsync(entry);
 
             TempData["Message"] = "Blog entry created successfully.";
 
             return RedirectToAction(nameof(Index));
         }
 
-        private BlogResponseViewModel? BuildResponseViewModel(int entryId)
+        private async Task<BlogResponseViewModel?> BuildResponseViewModelAsync(int entryId)
         {
-            var entry = _blogEntryRepository.GetBlogEntry(entryId);
+            var entry = await _blogEntryRepository.GetBlogEntryAsync(entryId);
             if (entry == null)
             {
                 return null;

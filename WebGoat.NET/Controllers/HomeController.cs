@@ -5,6 +5,7 @@ using System.Diagnostics;
 using WebGoatCore.ViewModels;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 
 namespace WebGoatCore.Controllers
 {
@@ -21,11 +22,11 @@ namespace WebGoatCore.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             var model = new HomeViewModel
             {
-                TopProducts = _productRepository.GetTopProducts(4)
+                TopProducts = await _productRepository.GetTopProductsAsync(4)
             };
 
             return View(model);
