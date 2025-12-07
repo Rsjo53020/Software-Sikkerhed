@@ -1,5 +1,4 @@
 ﻿@model Cart
-
 @{
     ViewData["Title"] = "Cart";
 }
@@ -8,8 +7,7 @@
 
 <h1>Your cart</h1>
 
-@if (Model == null || Model.OrderDetails == null || !Model.OrderDetails.Any())
-{
+@if (Model == null || !Model.Items.Any()){
     <p>Your cart is empty.</p>
     <a asp-controller="Product" asp-action="Search" class="btn btn-primary">Keep shopping</a>
 }

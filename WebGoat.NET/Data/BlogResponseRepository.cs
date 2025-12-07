@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using Microsoft.Extensions.Logging;
 using System.Linq;
+using System.Threading.Tasks;
 
 
 namespace WebGoatCore.Data
@@ -17,19 +18,26 @@ namespace WebGoatCore.Data
             _context = context;
             _logger = logger;
         }
-        public int CountResponsesByAuthorLastHour(string author)
+        public async Task<int> CountResponsesByAuthorLastHourAsync(string author)
         {
+            if (string.IsNullOrWhiteSpace(author))
+                return 0;
+
+            var normalizedAuthor = author.Trim();
             var since = DateTime.Now.AddHours(-1);
-            return _context.BlogResponses
-                .Where(r => r.Author == author && r.ResponseDate >= since)
-                .Count();
+
+            return await _context.BlogResponses
+                .AsNoTracking()
+                .Where(r => r.Author == normalizedAuthor && r.ResponseDate >= since)
+                .CountAsync();
         }
-        public bool CreateBlogResponse(BlogResponse response)
+        public async Task<bool> CreateBlogResponseAsync(BlogResponse response)
         {
             try
             {
-                _context.BlogResponses.Add(response);
-                _context.SaveChanges();
+
+                await _context.BlogResponses.AddAsync(response);
+                await _context.SaveChangesAsync();
                 return true;
             }
             catch (DbUpdateException ex)

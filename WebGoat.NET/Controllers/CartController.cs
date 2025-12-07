@@ -1,6 +1,7 @@
 ﻿using WebGoatCore.Models;
 using WebGoatCore.Data;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace WebGoatCore.Controllers
 {
@@ -19,7 +20,6 @@ namespace WebGoatCore.Controllers
             if (!HttpContext.Session.TryGet<Cart>("Cart", out var cart) || cart == null)
             {
                 cart = new Cart();
-                // Sørg for at en ny kurv altid bliver gemt
                 HttpContext.Session.Set("Cart", cart);
             }
 
@@ -40,7 +40,7 @@ namespace WebGoatCore.Controllers
 
         [HttpPost("{productId:int}")]
         [ValidateAntiForgeryToken]
-        public IActionResult AddOrder(int productId, short quantity)
+        public async Task<IActionResult> AddOrderAsync(int productId, short quantity)
         {
             if (quantity <= 0)
             {
@@ -48,8 +48,8 @@ namespace WebGoatCore.Controllers
                 return RedirectToAction("Details", "Product", new { productId });
             }
 
-            var product = _productRepository.GetProductById(productId);
-            
+            var product = await _productRepository.GetProductByIdAsync(productId);
+
             if (product == null)
             {
                 TempData["Error"] = $"Product {productId} was not found.";
@@ -58,25 +58,24 @@ namespace WebGoatCore.Controllers
 
             var cart = GetCart();
 
-            if (!cart.OrderDetails.TryGetValue(productId, out var orderDetail))
+            if (!cart.Items.TryGetValue(productId, out var cartItem))
             {
-                orderDetail = new OrderDetail
+                cartItem = new CartItemDTO
                 {
-                    Discount = 0.0F,
                     ProductId = productId,
-                    Quantity = quantity,
-                    Product = product,
-                    UnitPrice = product.UnitPrice
+                    ProductName = product.ProductName,
+                    UnitPrice = product.UnitPrice,
+                    Quantity = quantity
                 };
 
-                cart.OrderDetails.Add(productId, orderDetail);
+                cart.Items.Add(productId, cartItem);
             }
             else
             {
                 // Beskyt mod overflow – og udtryk tydeligt at vi lægger til
                 checked
                 {
-                    orderDetail.Quantity += quantity;
+                    cartItem.Quantity += quantity;
                 }
             }
 
@@ -92,13 +91,13 @@ namespace WebGoatCore.Controllers
         {
             var cart = GetCart();
 
-            if (!cart.OrderDetails.ContainsKey(productId))
+            if (!cart.Items.ContainsKey(productId))
             {
                 TempData["Error"] = $"Product {productId} was not found in your cart.";
                 return RedirectToAction(nameof(Index));
             }
 
-            cart.OrderDetails.Remove(productId);
+            cart.Items.Remove(productId);
             SaveCart(cart);
 
             TempData["Message"] = "Product removed from cart.";

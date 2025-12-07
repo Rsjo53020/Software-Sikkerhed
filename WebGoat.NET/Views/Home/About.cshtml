@@ -2,16 +2,71 @@
     ViewData["Title"] = "About";
 }
 
-<div class="owaspTopTen">
-    <h2>
-        About WebGoat.NetCore
-    </h2>
-    <div>
-        Welcome to WebGoat.NetCore, an intentionally insecure ecommerce website created so that
-        you and I can learn to create intentionally secure websites. We've introduced vulnerabilities
-        covering the OWASP Top Ten as well as several others.
+<div class="container py-5">
+
+    <!-- Logo Section -->
+    <div class="text-center mb-4">
+        <img src="~/Images/goat.png" 
+             alt="WebGoat Logo"
+             style="max-width: 180px;" 
+             class="img-fluid mb-3" />
+
+        <h2 class="fw-bold">About WebGoat.NetCore</h2>
     </div>
-    <div>
-        TODO
+
+    <!-- Intro -->
+    <p class="lead text-center mb-4">
+        WebGoat.NetCore is an intentionally vulnerable e-commerce application built 
+        for learning, experimenting, and mastering secure coding practices.
+    </p>
+
+    <!-- Explanation -->
+    <div class="mb-3">
+        <p>
+            The purpose of WebGoat.NetCore is to give developers, students, penetration testers, 
+            and security enthusiasts a safe environment in which they can study and exploit common 
+            vulnerabilities. By understanding how insecure code behaves, you learn how to prevent 
+            these issues in real applications.
+        </p>
+
+        <p>
+            The system includes hands-on examples based on the 
+            <strong>OWASP Top Ten</strong> as well as a variety of additional real-world 
+            security flaws. Each scenario provides both educational content and a practical 
+            challenge for you to explore.
+        </p>
+
+        <p>
+            Whether you are improving your secure coding skills, teaching others about software 
+            security, or conducting research, WebGoat.NetCore provides a structured and safe 
+            learning platform.
+        </p>
     </div>
+
+    <hr class="my-4" />
+
+    <!-- Coming Soon -->
+    <div class="alert alert-info shadow-sm">
+        <h5 class="fw-bold mb-2">Your Project</h5>
+        <ul class="mb-0">
+            <li>Risk Mitigation from your AbuseCase /li>
+            <li>Input validation</li>
+            <li>Domain primitives</li>
+            <li>Authentication and session management</li>
+            <li>Authorization and access control</li>
+            <li>Logging and monitoring</li>
+            <li>Data protection</li>
+            <li>Error handling</li>
+            <li>Secure configuration</li>
+            <li>Dependency management</li>
+            <li>Secure coding practices</li>
+            <li>Testing for security</li>
+            <li>Threat modeling</li>
+            <li>Secure architecture</li>
+            <li> CI/CD-pipelines</li>
+            <li>Security headers</li>
+            <li>And more...</li>
+        </ul>
+    </div>
+
 </div>

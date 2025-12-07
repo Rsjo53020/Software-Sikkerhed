@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+
 
 namespace WebGoatCore.Data
 {
@@ -15,38 +17,34 @@ namespace WebGoatCore.Data
             _context = context;
         }
 
-        public BlogEntry CreateBlogEntry(string title, string contents, string username)
+        public async Task<BlogEntry> CreateBlogEntryAsync(BlogEntry entry)
         {
-            var entry = new BlogEntry
-            {
-                Title = title,
-                Contents = contents,
-                Author = username,
-                PostedDate = DateTime.Now,
-            };
-
-            entry = _context.BlogEntries.Add(entry).Entity;
-            _context.SaveChanges();
+            await _context.BlogEntries.AddAsync(entry);
+            await _context.SaveChangesAsync();
             return entry;
         }
 
-        public BlogEntry GetBlogEntry(int blogEntryId)
+        public async Task<BlogEntry?> GetBlogEntryAsync(int blogEntryId)
         {
-            return _context.BlogEntries.Single(b => b.Id == blogEntryId);
+            return await _context.BlogEntries
+                .AsNoTracking()
+                .SingleOrDefaultAsync(b => b.Id == blogEntryId);
         }
 
-        public List<BlogEntry> GetTopBlogEntries()
+        public async Task<IReadOnlyList<BlogEntry>> GetTopBlogEntriesAsync(int numberOfEntries = 4, int startPosition = 0)
         {
-            return GetTopBlogEntries(4, 0);
-        }
+            if (numberOfEntries <= 0)
+                return Array.Empty<BlogEntry>();
 
-        public List<BlogEntry> GetTopBlogEntries(int numberOfEntries, int startPosition)
-        {
-            var blogEntries = _context.BlogEntries
+            if (startPosition < 0)
+                startPosition = 0;
+
+            return await _context.BlogEntries
+                .AsNoTracking()
                 .OrderByDescending(b => b.PostedDate)
                 .Skip(startPosition)
-                .Take(numberOfEntries);
-            return blogEntries.ToList();
+                .Take(numberOfEntries)
+                .ToListAsync();
         }
     }
 }

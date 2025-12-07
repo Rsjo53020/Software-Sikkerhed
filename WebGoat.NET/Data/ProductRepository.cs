@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebGoatCore.Data
 {
@@ -14,68 +16,117 @@ namespace WebGoatCore.Data
             _context = context;
         }
 
-        public Product GetProductById(int productId)
+        public async Task<Product?> GetProductByIdAsync(int productId)
         {
-            return _context.Products.Single(p => p.ProductId == productId);
+            return await _context.Products
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.ProductId == productId);
         }
 
-        public List<Product> GetTopProducts(int NOPTR)
+        public async Task<IReadOnlyList<Product>> GetTopProductsAsync(int count)
         {
-            var orderDate = DateTime.Today.AddMonths(-1);
-            var topProducts = _context.Orders
-                .Where(o => o.OrderDate > orderDate)
-                .Join(_context.OrderDetails, o => o.OrderId, od => od.OrderId, (o, od) => od)
-                // Turn this query to standard LINQ expression, because EF Core can't handle the remaining part
-                .AsEnumerable()
-                .GroupBy(od => od.Product)
-                .OrderByDescending(g => g.Sum(t => t.UnitPrice * t.Quantity))
-                .Select(g => g.Key)
-                .Take(NOPTR)
-                .ToList();
+            var result = new List<Product>();
+            var since = DateTime.Today.AddMonths(-1);
 
-            if(topProducts.Count < 4)
+            // Get top products by revenue in the last month
+            var topProductIds = await _context.OrderDetails
+                .Where(od => od.Order.OrderDate > since)
+                .GroupBy(od => od.ProductId)
+                .Select(g => new
+                {
+                    ProductId = g.Key,
+                    Revenue = g.Sum(x => x.UnitPrice * x.Quantity)
+                })
+                .OrderByDescending(x => x.Revenue)
+                .Take(count)
+                .Select(x => x.ProductId)
+                .ToListAsync();
+
+
+            // Fetch product details for the top products
+            if (topProductIds.Count > 0)
             {
-                topProducts.AddRange(_context.Products
+                var topProducts = await _context.Products
+                    .AsNoTracking()
+                    .Where(p => topProductIds.Contains(p.ProductId))
+                    .ToListAsync();
+
+                var dict = topProducts.ToDictionary(p => p.ProductId);
+
+                foreach (var id in topProductIds)
+                {
+                    if (dict.TryGetValue(id, out var product))
+                    {
+                        result.Add(product);
+                    }
+                }
+            }
+
+            // If not enough top products, fill with highest priced products
+            if (result.Count < count)
+            {
+                var missing = count - result.Count;
+                var existingIds = topProductIds;
+
+                var fallback = await _context.Products
+                    .AsNoTracking()
+                    .Where(p => !existingIds.Contains(p.ProductId))
                     .OrderByDescending(p => p.UnitPrice)
-                    .Take(NOPTR - topProducts.Count)
-                    .ToList());
+                    .Take(missing)
+                    .ToListAsync();
+
+                result.AddRange(fallback);
             }
 
-            return topProducts;
+            return result;
+        }
+        
+        public async Task<IReadOnlyList<Product>> GetAllProductsAsync()
+        {
+            return await _context.Products
+            .AsNoTracking()
+            .OrderBy(p => p.ProductName)
+            .ToListAsync();
+
         }
 
-        public List<Product> GetAllProducts()
+        public async Task<IReadOnlyList<Product>> FindNonDiscontinuedProductsAsync(string? productName, int? categoryId)        
         {
-            return _context.Products.OrderBy(p => p.ProductName).ToList();
-        }
+            var query = _context.Products
+                .AsNoTracking()
+                .Where(p => !p.Discontinued);
 
-        public List<Product> FindNonDiscontinuedProducts(string? pN, int? cI)
-        {
-            var p = _context.Products.Where(p => !p.Discontinued);
-
-            if (cI != null)
+            if (categoryId.HasValue)
             {
-                p = p.Where(p => p.CategoryId == cI);
+                query = query.Where(p => p.CategoryId == categoryId.Value);
             }
-            if (pN != null)
+
+            if (!string.IsNullOrWhiteSpace(productName))
             {
-                 return p.ToList().Where(p => p.ProductName.Contains(pN, StringComparison.CurrentCultureIgnoreCase)).OrderBy(p => p.ProductName).ToList();
+                var term = productName.Trim().ToLower();
+
+                query = query
+                .Where(p => p.ProductName
+                .ToLower()
+                .Contains(term));
             }
 
-            return p.OrderBy(p => p.ProductName).ToList();
+            return await query
+            .OrderBy(p => p.ProductName)
+            .ToListAsync();
         }
 
-        public Product Update(Product p)
+        public async Task<Product> UpdateAsync(Product product)
         {
-            p = _context.Products.Update(p).Entity;
-            _context.SaveChanges();
-            return p;
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
+            return product;
         }
 
-        public void Add(Product p)
+        public async Task AddAsync(Product product)
         {
-            _context.Products.Add(p);
-            _context.SaveChanges();
+            await _context.Products.AddAsync(product);
+            await _context.SaveChangesAsync();
         }
     }
 }

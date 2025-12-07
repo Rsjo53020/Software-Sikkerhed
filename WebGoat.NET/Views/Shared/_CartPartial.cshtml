@@ -1,48 +1,51 @@
-﻿@model Cart
+﻿@model WebGoatCore.Models.Cart
 
-<table class="receipt">
-    <tbody>
+<table class="table table-striped align-middle">
+    <thead class="table-light">
         <tr>
-            <th>Product Id</th>
-            <th>Product Name</th>
-            <th>Unit Price</th>
-            <th>Quantity</th>
-            <th>Extended Price</th>
+            <th>Product</th>
+            <th class="text-end">Unit price</th>
+            <th class="text-end">Quantity</th>
+            <th class="text-end">Total</th>
+            <th></th>
         </tr>
-        @foreach (var order in Model.OrderDetails.Values)
+    </thead>
+
+    <tbody>
+        @foreach (var item in Model.Items.Values)
         {
             <tr>
-                <td>@order.ProductId</td>
-                <td>@order.Product.ProductName</td>
-                <td>@order.DecimalUnitPrice.ToString("F")</td>
-                <td>@order.Quantity</td>
-                <td>@order.ExtendedPrice.ToString("F")</td>
-                <td>
-                <form asp-controller="Cart"
-                      asp-action="RemoveOrder"
-                      asp-route-productId="@order.ProductId"
-                      method="post"
-                      style="display:inline;">
-                    
-                    @Html.AntiForgeryToken()
+                <td>@item.ProductName</td>
 
-                    <button type="submit" class="btn btn-sm btn-danger">
-                        Remove
-                    </button>
-                </form>
-            </td>
+                <td class="text-end">
+                    @item.UnitPrice.ToString("C")
+                </td>
+
+                <td class="text-end">
+                    @item.Quantity
+                </td>
+
+                <td class="text-end">
+                    @item.LineTotal.ToString("C")
+                </td>
+
+                <td class="text-end">
+                    <form asp-controller="Cart" 
+                          asp-action="RemoveOrder" 
+                          asp-route-productId="@item.ProductId"
+                          method="post"
+                          class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            Remove
+                        </button>
+                    </form>
+                </td>
             </tr>
         }
-        @if (Model.OrderDetails.Any())
-        {
-            <tr><td class="table-separator" colspan="6"></td></tr>
-        }
-        <tr>
-            <td></td>
-            <td>Subtotal:</td>
-            <td></td>
-            <td></td>
-            <td style="border-top: 5px">@Model.SubTotal.ToString("F")</td>
-        </tr>
     </tbody>
 </table>
+
+<div class="text-end fw-bold mt-3">
+    Subtotal: @Model.SubTotal.ToString("C")
+</div>

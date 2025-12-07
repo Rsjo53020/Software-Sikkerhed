@@ -126,7 +126,7 @@ namespace WebGoatCore.Controllers
                 return View(model);
             }
 
-            _customerRepository.CreateCustomer(
+            await _customerRepository.CreateCustomerAsync(
                 model.CompanyName,
                 model.Username,
                 model.Address,
@@ -141,7 +141,7 @@ namespace WebGoatCore.Controllers
 
         public IActionResult MyAccount() => View();
 
-        public IActionResult ViewAccountInfo()
+        public async Task<IActionResult> ViewAccountInfo()
         {
             var username = CurrentUserName;
             if (string.IsNullOrEmpty(username))
@@ -150,7 +150,7 @@ namespace WebGoatCore.Controllers
                 return View(new ChangeAccountInfoViewModel());
             }
 
-            var customer = _customerRepository.GetCustomerByUsername(username);
+            var customer = await _customerRepository.GetCustomerByUsernameAsync(username);
             if (customer == null)
             {
                 ModelState.AddModelError(string.Empty, "We don't recognize your customer Id. Please log in and try again.");
@@ -172,7 +172,7 @@ namespace WebGoatCore.Controllers
         }
 
         [HttpGet]
-        public IActionResult ChangeAccountInfo()
+        public async Task<IActionResult> ChangeAccountInfo()
         {
             var username = CurrentUserName;
             if (string.IsNullOrEmpty(username))
@@ -181,7 +181,7 @@ namespace WebGoatCore.Controllers
                 return View(new ChangeAccountInfoViewModel());
             }
 
-            var customer = _customerRepository.GetCustomerByUsername(username);
+            var customer = await _customerRepository.GetCustomerByUsernameAsync(username);
             if (customer == null)
             {
                 ModelState.AddModelError(string.Empty, "We don't recognize your customer Id. Please log in and try again.");
@@ -202,7 +202,7 @@ namespace WebGoatCore.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult ChangeAccountInfo(ChangeAccountInfoViewModel model)
+        public async Task<IActionResult> ChangeAccountInfo(ChangeAccountInfoViewModel model)
         {
             var username = CurrentUserName;
             if (string.IsNullOrEmpty(username))
@@ -211,27 +211,26 @@ namespace WebGoatCore.Controllers
                 return View(model);
             }
 
-            var customer = _customerRepository.GetCustomerByUsername(username);
-            if (customer == null)
-            {
-                ModelState.AddModelError(string.Empty, "We don't recognize your customer Id. Please log in and try igen.");
-                return View(model);
-            }
-
             if (!ModelState.IsValid)
             {
                 return View(model);
             }
+            var customer = await _customerRepository.GetCustomerByUsernameAsync(username);
 
-            customer.CompanyName = model.CompanyName ?? customer.CompanyName;
-            customer.ContactTitle = model.ContactTitle ?? customer.ContactTitle;
-            customer.Address = model.Address ?? customer.Address;
-            customer.City = model.City ?? customer.City;
-            customer.Region = model.Region ?? customer.Region;
-            customer.PostalCode = model.PostalCode ?? customer.PostalCode;
-            customer.Country = model.Country ?? customer.Country;
+            var customerDM = new CustomerDM(
+                customerId: new CustomerId(customer.CustomerId),
+                companyName: new CompanyName(model.CompanyName!),
+                contactName: new ContactName(username),
+                contactTitle: string.IsNullOrEmpty(model.ContactTitle) ? null : new ContactTitle(model.ContactTitle!),
+                address: string.IsNullOrEmpty(model.Address) ? null : new Address(model.Address!),
+                city: string.IsNullOrEmpty(model.City) ? null : new City(model.City!),
+                region: string.IsNullOrEmpty(model.Region) ? null : new Region(model.Region!),
+                postalCode: string.IsNullOrEmpty(model.PostalCode) ? null : new PostalCode(model.PostalCode!),
+                country: string.IsNullOrEmpty(model.Country) ? null : new Country(model.Country!),
+                phone: null,
+                fax: null);
 
-            _customerRepository.SaveCustomer(customer);
+            await _customerRepository.SaveCustomerAsync(customerDM);
             model.UpdatedSucessfully = true;
 
             // Evt. PRG pattern: RedirectToAction("ChangeAccountInfo") i stedet for at vise samme view

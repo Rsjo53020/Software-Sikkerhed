@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using WebGoatCore.ViewModels;
+using System.Threading.Tasks;
 
 namespace WebGoatCore.Controllers
 {
@@ -35,18 +36,18 @@ namespace WebGoatCore.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult Search(string? nameFilter, int? selectedCategoryId)
+        public async Task<IActionResult> Search(string? nameFilter, int? selectedCategoryId)
         {
             if (selectedCategoryId.HasValue &&
-                _categoryRepository.GetById(selectedCategoryId.Value) == null)
+                await _categoryRepository.GetByIdAsync(selectedCategoryId.Value) == null)
             {
                 _logger.LogWarning("Invalid category id {CategoryId} in Search; resetting filter.",
                     selectedCategoryId.Value);
                 selectedCategoryId = null;
             }
 
-            var products = _productRepository
-                .FindNonDiscontinuedProducts(nameFilter, selectedCategoryId)
+            var products = (await _productRepository
+                .FindNonDiscontinuedProductsAsync(nameFilter, selectedCategoryId))
                 .Select(p => new ProductListViewModel.ProductItem
                 {
                     Product = p,
@@ -57,7 +58,7 @@ namespace WebGoatCore.Controllers
             var model = new ProductListViewModel
             {
                 Products = products,
-                ProductCategories = _categoryRepository.GetAllCategories(),
+                ProductCategories = await _categoryRepository.GetAllCategoriesAsync(),
                 SelectedCategoryId = selectedCategoryId,
                 NameFilter = nameFilter
             };
@@ -67,7 +68,7 @@ namespace WebGoatCore.Controllers
 
         [HttpGet("{productId:int}")]
         [AllowAnonymous]
-        public IActionResult Details(int productId, short quantity = 1)
+        public async Task<IActionResult> Details(int productId, short quantity = 1)
         {
             if (quantity <= 0)
             {
@@ -78,7 +79,7 @@ namespace WebGoatCore.Controllers
 
             try
             {
-                var product = _productRepository.GetProductById(productId);
+                var product = await _productRepository.GetProductByIdAsync(productId);
 
                 if (product == null)
                 {
@@ -103,21 +104,21 @@ namespace WebGoatCore.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public IActionResult Manage()
+        public async Task<IActionResult> Manage()
         {
-            var products = _productRepository.GetAllProducts();
+            var products = await _productRepository.GetAllProductsAsync();
             return View(products);
         }
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public IActionResult Add()
+        public async Task<IActionResult> Add()
         {
             var model = new ProductAddOrEditViewModel
             {
                 AddsNew = true,
-                ProductCategories = _categoryRepository.GetAllCategories(),
-                Suppliers = _supplierRepository.GetAllSuppliers(),
+                ProductCategories = (System.Collections.Generic.IList<Category>)await _categoryRepository.GetAllCategoriesAsync(),
+                Suppliers = await _supplierRepository.GetAllSuppliersAsync(),
                 Product = new Product()
             };
 
@@ -127,15 +128,15 @@ namespace WebGoatCore.Controllers
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
-        public IActionResult Add(Product product)
+        public async Task<IActionResult> Add(Product product)
         {
             if (!ModelState.IsValid)
             {
                 var vm = new ProductAddOrEditViewModel
                 {
                     AddsNew = true,
-                    ProductCategories = _categoryRepository.GetAllCategories(),
-                    Suppliers = _supplierRepository.GetAllSuppliers(),
+                    ProductCategories = (System.Collections.Generic.IList<Category>)await _categoryRepository.GetAllCategoriesAsync(),
+                    Suppliers = await _supplierRepository.GetAllSuppliersAsync(),
                     Product = product
                 };
 
@@ -144,7 +145,7 @@ namespace WebGoatCore.Controllers
 
             try
             {
-                _productRepository.Add(product);
+                await _productRepository.AddAsync(product);
                 _logger.LogInformation("Product {ProductId} created.", product.ProductId);
 
                 return RedirectToAction(nameof(Edit), new { id = product.ProductId });
@@ -157,8 +158,8 @@ namespace WebGoatCore.Controllers
                 var vm = new ProductAddOrEditViewModel
                 {
                     AddsNew = true,
-                    ProductCategories = _categoryRepository.GetAllCategories(),
-                    Suppliers = _supplierRepository.GetAllSuppliers(),
+                    ProductCategories = (System.Collections.Generic.IList<Category>)await _categoryRepository.GetAllCategoriesAsync(),
+                    Suppliers = await _supplierRepository.GetAllSuppliersAsync(),
                     Product = product
                 };
 
@@ -168,9 +169,9 @@ namespace WebGoatCore.Controllers
 
         [HttpGet("{id:int}")]
         [Authorize(Roles = "Admin")]
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            var product = _productRepository.GetProductById(id);
+            var product = await _productRepository.GetProductByIdAsync(id);
             if (product == null)
             {
                 _logger.LogWarning("Edit requested for non-existing product id {ProductId}.", id);
@@ -180,8 +181,8 @@ namespace WebGoatCore.Controllers
             var model = new ProductAddOrEditViewModel
             {
                 AddsNew = false,
-                ProductCategories = _categoryRepository.GetAllCategories(),
-                Suppliers = _supplierRepository.GetAllSuppliers(),
+                ProductCategories = (System.Collections.Generic.IList<Category>) await _categoryRepository.GetAllCategoriesAsync(),
+                Suppliers = await _supplierRepository.GetAllSuppliersAsync(),
                 Product = product
             };
 
@@ -191,7 +192,7 @@ namespace WebGoatCore.Controllers
         [HttpPost("{id:int}")]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, Product product)
+        public async Task<IActionResult> Edit(int id, Product product)
         {
             if (id != product.ProductId)
             {
@@ -205,8 +206,8 @@ namespace WebGoatCore.Controllers
                 var vmInvalid = new ProductAddOrEditViewModel
                 {
                     AddsNew = false,
-                    ProductCategories = _categoryRepository.GetAllCategories(),
-                    Suppliers = _supplierRepository.GetAllSuppliers(),
+                    ProductCategories = (System.Collections.Generic.IList<Category>) await _categoryRepository.GetAllCategoriesAsync(),
+                    Suppliers = await _supplierRepository.GetAllSuppliersAsync(),
                     Product = product
                 };
 
@@ -215,14 +216,14 @@ namespace WebGoatCore.Controllers
 
             try
             {
-                var updatedProduct = _productRepository.Update(product);
+                var updatedProduct = await _productRepository.UpdateAsync(product);
                 _logger.LogInformation("Product {ProductId} updated.", product.ProductId);
 
                 var vm = new ProductAddOrEditViewModel
                 {
                     AddsNew = false,
-                    ProductCategories = _categoryRepository.GetAllCategories(),
-                    Suppliers = _supplierRepository.GetAllSuppliers(),
+                    ProductCategories = (System.Collections.Generic.IList<Category>) await _categoryRepository.GetAllCategoriesAsync(),
+                    Suppliers = await _supplierRepository.GetAllSuppliersAsync(),
                     Product = updatedProduct
                 };
 
@@ -236,8 +237,8 @@ namespace WebGoatCore.Controllers
                 var vmError = new ProductAddOrEditViewModel
                 {
                     AddsNew = false,
-                    ProductCategories = _categoryRepository.GetAllCategories(),
-                    Suppliers = _supplierRepository.GetAllSuppliers(),
+                    ProductCategories = (System.Collections.Generic.IList<Category>) await _categoryRepository.GetAllCategoriesAsync(),
+                    Suppliers = await _supplierRepository.GetAllSuppliersAsync(),
                     Product = product
                 };
 
