@@ -6,6 +6,7 @@ using System;
 using WebGoatCore.ViewModels;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace WebGoatCore.Controllers
 {
@@ -27,15 +28,15 @@ namespace WebGoatCore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
-            var entries = await _blogEntryRepository.GetTopBlogEntriesAsync();
+            var blogEntryDM = await _blogEntryRepository.GetTopBlogEntriesAsync();
 
-            var viewModels = entries.Select(e => new BlogEntryViewModel
+            var viewModels = blogEntryDM.Select(e => new BlogEntryViewModel
             {
                 Id = e.Id,
-                Title = e.Title,
-                Contents = e.Contents,
+                Title = e.Title.ToString(),
+                Contents = e.Contents.ToString(),
                 PostedDate = e.PostedDate,
-                Author = e.Author
+                Author = e.Author.ToString()
             }).ToList();
 
             return View(viewModels);
@@ -60,13 +61,12 @@ namespace WebGoatCore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reply(int entryId, BlogResponseViewModel model)
         {
-            // Sørg for at model har det rigtige entryId
             model.BlogEntryId = entryId;
-
             var userName = User?.Identity?.Name ?? "Anonymous";
 
             // RATE LIMIT: max 5 responses per hour per user
             var responsesLastHour = await _blogResponseRepository.CountResponsesByAuthorLastHourAsync(userName);
+            
             if (responsesLastHour >= 5)
             {
                 TempData["Error"] = "You have already posted 5 responses within the last hour. Please try again later.";
@@ -77,7 +77,6 @@ namespace WebGoatCore.Controllers
             {
                 TempData["Error"] = "Your response does not meet the requirements (length or illegal characters).";
 
-                // Genopbyg viewmodel med blog entry, så valideringsfejl kan vises på Reply-siden
                 var vm = await BuildResponseViewModelAsync(entryId);
                 if (vm == null)
                 {
@@ -89,15 +88,13 @@ namespace WebGoatCore.Controllers
                 return View(vm);
             }
 
-            var response = new BlogResponse
-            {
-                Author = userName,
-                Contents = model.Contents,
-                BlogEntryId = model.BlogEntryId,
-                ResponseDate = DateTime.UtcNow
-            };
+            var blogResponseDM = new BlogResponseDM(
+                model.BlogEntryId,
+                responseDate: DateTime.Now,
+                author: new AuthorName(userName),
+                contents: new BlogContent(model.Contents));
 
-            if (!await _blogResponseRepository.CreateBlogResponseAsync(response))
+            if (!await _blogResponseRepository.CreateBlogResponseAsync(blogResponseDM))
             {
                 TempData["Error"] = "An error occurred while saving your response. Please try again later.";
                 return RedirectToAction(nameof(Index));
@@ -133,14 +130,13 @@ namespace WebGoatCore.Controllers
 
             var author = User?.Identity?.Name ?? "Admin";
 
-            var entry = new BlogEntry
-            {
-                Title = title,
-                Contents = contents,
-                Author = author,
-                PostedDate = DateTime.Now,
-            };
-            var blogEntry =  await _blogEntryRepository.CreateBlogEntryAsync(entry);
+            var blogEntryDM = new BlogEntryDM(
+                title: new BlogTitle(title),
+                postedDate: DateTime.Now,
+                contents: new BlogContent(contents),
+                author: new AuthorName(author));
+
+            await _blogEntryRepository.CreateBlogEntryAsync(blogEntryDM);
 
             TempData["Message"] = "Blog entry created successfully.";
 
@@ -149,25 +145,25 @@ namespace WebGoatCore.Controllers
 
         private async Task<BlogResponseViewModel?> BuildResponseViewModelAsync(int entryId)
         {
-            var entry = await _blogEntryRepository.GetBlogEntryAsync(entryId);
-            if (entry == null)
+            var blogEntryDM = await _blogEntryRepository.GetBlogEntryAsync(entryId);
+            if (blogEntryDM == null)
             {
                 return null;
             }
 
-            var entryVm = new BlogEntryViewModel
+            var blogEntryVm = new BlogEntryViewModel
             {
-                Id = entry.Id,
-                Title = entry.Title,
-                PostedDate = entry.PostedDate,
-                Contents = entry.Contents,
-                Author = entry.Author
+                Id = blogEntryDM.Id,
+                Title = blogEntryDM.Title.ToString(),
+                PostedDate = blogEntryDM.PostedDate,
+                Contents = blogEntryDM.Contents.ToString(),
+                Author = blogEntryDM.Author.ToString()
             };
 
             return new BlogResponseViewModel
             {
                 BlogEntryId = entryId,
-                BlogEntry = entryVm
+                BlogEntry = blogEntryVm
             };
         }
     }

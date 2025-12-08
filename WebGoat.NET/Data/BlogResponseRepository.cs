@@ -43,7 +43,6 @@ namespace WebGoatCore.Data
                     contents: response.Contents.ToString()
                 );
 
-
                 await _context.BlogResponses.AddAsync(blogResponse);
                 await _context.SaveChangesAsync();
                 return true;
