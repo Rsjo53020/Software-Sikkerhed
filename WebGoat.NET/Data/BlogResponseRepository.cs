@@ -12,7 +12,7 @@ namespace WebGoatCore.Data
     {
         private readonly ILogger<BlogResponseRepository> _logger;
         private readonly NorthwindContext _context;
-        
+
         public BlogResponseRepository(NorthwindContext context, ILogger<BlogResponseRepository> logger)
         {
             _context = context;
@@ -31,12 +31,20 @@ namespace WebGoatCore.Data
                 .Where(r => r.Author == normalizedAuthor && r.ResponseDate >= since)
                 .CountAsync();
         }
-        public async Task<bool> CreateBlogResponseAsync(BlogResponse response)
+        public async Task<bool> CreateBlogResponseAsync(BlogResponseDM response)
         {
             try
             {
+                //Map from BlogResponseDM to BlogResponse
+                var blogResponse = new BlogResponse(
+                    blogEntryId: response.BlogEntryId,
+                    responseDate: response.ResponseDate,
+                    author: response.Author.ToString(),
+                    contents: response.Contents.ToString()
+                );
 
-                await _context.BlogResponses.AddAsync(response);
+
+                await _context.BlogResponses.AddAsync(blogResponse);
                 await _context.SaveChangesAsync();
                 return true;
             }
