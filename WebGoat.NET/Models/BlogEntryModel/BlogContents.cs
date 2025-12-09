@@ -6,15 +6,14 @@ public sealed class BlogContent
 {
     public const int MinLength = 5;
     public const int MaxLength = 2000;
-    public const string AllowedCharactersPattern =
-        @"^[a-zA-Z0-9æøåÆØÅ\s\.,()\-\!\?@]+$";
+
+    public const string AllowedCharactersPattern = @"^[^<>=]+$";
 
     [Required]
-    [StringLength(MaxLength, MinimumLength = MinLength,
-        ErrorMessage = "Content must be between 5 and 500 characters.")]
-    [RegularExpression(AllowedCharactersPattern,
-        ErrorMessage = 
-        "Content may only contain letters, numbers, spaces, and the characters . , ( ) - ! ? @"
+    [StringLength(
+        MaxLength,
+        MinimumLength = MinLength,
+        ErrorMessage = $"Content must be between 5 and 2000 characters."
     )]
     public string Value { get; }
 
@@ -29,13 +28,6 @@ public sealed class BlogContent
         {
             throw new ArgumentException(
                 $"Content must be between {MinLength} and {MaxLength} characters.",
-                nameof(value));
-        }
-
-        if (!Regex.IsMatch(trimmed, AllowedCharactersPattern))
-        {
-            throw new ArgumentException(
-                "Content may only contain letters, numbers, spaces, and the characters . , ( ) - ! ? @",
                 nameof(value));
         }
 
