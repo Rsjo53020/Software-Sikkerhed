@@ -11,7 +11,7 @@ public sealed class BlogContent
 
     [Required]
     [StringLength(MaxLength, MinimumLength = MinLength,
-        ErrorMessage = "Content must be between 5 and 500 characters.")]
+        ErrorMessage = "Content must be between 5 and 2000 characters.")]
     [RegularExpression(AllowedCharactersPattern,
         ErrorMessage = 
         "Content may only contain letters, numbers, spaces, and the characters . , ( ) - ! ? @"
