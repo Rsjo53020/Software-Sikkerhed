@@ -43,7 +43,7 @@ namespace WebGoat.NET.Tests
         public void GivenTooLongContent_WhenCreatedConstructor_ThenThrowsArgumentException()
         {
             // Given
-            var tooLong = new string('A', 501);
+            var tooLong = new string('A', 2001);
 
             // When + Then
             Assert.Throws<ArgumentException>(() => new BlogContent(tooLong));
