@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 public sealed class BlogContent
 {
     public const int MinLength = 5;
-    public const int MaxLength = 500;
+    public const int MaxLength = 2000;
     public const string AllowedCharactersPattern =
         @"^[a-zA-Z0-9æøåÆØÅ\s\.,()\-\!\?@]+$";
 
