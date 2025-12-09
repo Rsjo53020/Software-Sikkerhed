@@ -1,20 +1,45 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 
 public sealed class BlogContent
 {
+    public const int MinLength = 5;
+    public const int MaxLength = 500;
+    public const string AllowedCharactersPattern =
+        @"^[a-zA-Z0-9æøåÆØÅ\s\.,()\-\!\?@]+$";
+
     [Required]
-        [StringLength(500, MinimumLength = 5,
-            ErrorMessage = "Content must be between 5 and 500 characters.")]
-        [RegularExpression(@"^[a-zA-Z0-9æøåÆØÅ\s\.,()\-\!\?@]+$",
-            ErrorMessage = 
-            "Content may only contain letters, numbers, spaces, and the characters . , ( ) - ! ? @"
-        )]
+    [StringLength(MaxLength, MinimumLength = MinLength,
+        ErrorMessage = "Content must be between 5 and 500 characters.")]
+    [RegularExpression(AllowedCharactersPattern,
+        ErrorMessage = 
+        "Content may only contain letters, numbers, spaces, and the characters . , ( ) - ! ? @"
+    )]
     public string Value { get; }
 
     public BlogContent(string value)
     {
-        Value = value;
+        if (value is null)
+            throw new ArgumentException("Content cannot be null.", nameof(value));
+
+        var trimmed = value.Trim();
+
+        if (trimmed.Length < MinLength || trimmed.Length > MaxLength)
+        {
+            throw new ArgumentException(
+                $"Content must be between {MinLength} and {MaxLength} characters.",
+                nameof(value));
+        }
+
+        if (!Regex.IsMatch(trimmed, AllowedCharactersPattern))
+        {
+            throw new ArgumentException(
+                "Content may only contain letters, numbers, spaces, and the characters . , ( ) - ! ? @",
+                nameof(value));
+        }
+
+        Value = trimmed;
     }
 
     public override string ToString() => Value;
