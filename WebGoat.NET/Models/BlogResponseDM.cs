@@ -4,11 +4,11 @@ namespace WebGoatCore.Models
 {
     public sealed class BlogResponseDM
     {
-        public int Id { get; }
-        public int BlogEntryId { get; }
-        public DateTime ResponseDate { get; }
+        public int Id { get; private set; }
+        public int BlogEntryId { get; private set; }
+        public DateTime ResponseDate { get; private set; }
         public AuthorName Author { get; }
-        public BlogContent Contents { get; }
+        public BlogContent Contents { get; private set; }
 
         public BlogResponseDM(
             int blogEntryId,

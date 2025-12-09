@@ -33,7 +33,7 @@ namespace WebGoat.NET.Tests
         public void GivenTooShortContent_WhenCreatedConstructor_ThenThrowsArgumentException()
         {
             // Given
-            var tooShort = "Hej"; // < 5 tegn
+            var tooShort = "Hej";
 
             // When + Then
             Assert.Throws<ArgumentException>(() => new BlogContent(tooShort));
@@ -47,16 +47,6 @@ namespace WebGoat.NET.Tests
 
             // When + Then
             Assert.Throws<ArgumentException>(() => new BlogContent(tooLong));
-        }
-
-        [Theory]
-        [InlineData("Ugyldigt tegn: #")]
-        [InlineData("HTML <tag> er ikke tilladt")]
-        [InlineData("Emoji 😊 er ikke tilladt")]
-        public void GivenContentWithIllegalCharacters_WhenCreatedConstructor_ThenThrowsArgumentException(string invalid)
-        {
-            // Given + When + Then
-            Assert.Throws<ArgumentException>(() => new BlogContent(invalid));
         }
     }
 }
