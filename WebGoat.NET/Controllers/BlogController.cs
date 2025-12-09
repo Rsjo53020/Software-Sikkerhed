@@ -64,7 +64,6 @@ namespace WebGoatCore.Controllers
             model.BlogEntryId = entryId;
             var userName = User?.Identity?.Name ?? "Anonymous";
 
-            // RATE LIMIT: max 5 responses per hour per user
             var responsesLastHour = await _blogResponseRepository.CountResponsesByAuthorLastHourAsync(userName);
             
             if (responsesLastHour >= 5)

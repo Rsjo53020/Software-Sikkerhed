@@ -31,11 +31,11 @@ namespace WebGoatCore.Data
                 .Where(r => r.Author == normalizedAuthor && r.ResponseDate >= since)
                 .CountAsync();
         }
+        
         public async Task<bool> CreateBlogResponseAsync(BlogResponseDM response)
         {
             try
             {
-                //Map from BlogResponseDM to BlogResponse
                 var blogResponse = new BlogResponse(
                     blogEntryId: response.BlogEntryId,
                     responseDate: response.ResponseDate,

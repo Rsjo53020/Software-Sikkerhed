@@ -13,6 +13,16 @@ public sealed class AuthorName
     {
         value = value.Trim();
 
+        if (value.Length > MaxLength)
+            throw new ArgumentException(
+                $"Author name cannot exceed {MaxLength} characters.",
+                nameof(value));
+
+        if (string.IsNullOrEmpty(value))
+            throw new ArgumentException(
+                    $"Author name cannot be' Empty.",
+                    nameof(value));
+
         Value = value;
     }
 
